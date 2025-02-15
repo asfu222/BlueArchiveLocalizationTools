@@ -391,7 +391,11 @@ class CSParser:
 
             if struct_properties:
                 structs.append(StructTable(struct_name, struct_properties))
-
+        structs = [struct for struct in structs if not struct.name.endswith("ExcelTable")]
+        for struct in tuple(structs):
+            if not struct.name.endswith("Excel"):
+                continue
+            structs.append(StructTable(struct.name + "Table", [Property(struct.name, 'DataList', True)]))
         return structs
 
 

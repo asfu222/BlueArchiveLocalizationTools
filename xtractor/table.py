@@ -38,15 +38,15 @@ class TableExtractor:
             self.dump_wrapper_lib = importlib.import_module(
                 f"{self.flat_data_module_name}.dump_wrapper"
             )
+            self.lower_fb_name_modules = {
+            t_name.lower(): t_class
+            for t_name, t_class in flat_data_lib.__dict__.items()
+            }
         except Exception as e:
             notice(
                 f"Cannot import FlatData module. Make sure FlatData is available in Extracted folder. {e}",
                 "error",
             )
-        self.lower_fb_name_modules = {
-            t_name.lower(): t_class
-            for t_name, t_class in flat_data_lib.__dict__.items()
-        }
 
     def _process_bytes_file(
         self, file_name: str, data: bytes

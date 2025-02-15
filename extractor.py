@@ -8,12 +8,13 @@ from multiprocessing import Queue, freeze_support
 from os import path
 
 from lib.compiler import CompileToPython, CSParser
-from lib.console import ProgressBar, bar_increase, bar_text, notice, print
+from lib.console import ProgressBar, bar_increase, bar_text, notice
 from utils.util import TaskManager
 from xtractor.bundle import BundleExtractor
 from xtractor.table import TableExtractor
 import importlib
 from lib.encryption import xor_with_key
+from utils.config import Config
 
 class BundlesExtractor:
     @staticmethod
@@ -84,7 +85,7 @@ def compile_python(DUMP_CS_FILE_PATH, EXTRACT_DIR) -> None:
     parser = CSParser(DUMP_CS_FILE_PATH)
     enums = parser.parse_enum()
     structs = parser.parse_struct()
-
+    
     print("Generating flatbuffer python dump files...")
     compiler = CompileToPython(enums, structs, path.join(EXTRACT_DIR, "FlatData"))
     compiler.create_enum_files()
@@ -114,7 +115,7 @@ class TableExtractorImpl:
             file_path.stem.lower(), None
             )
         ):
-            print("class not found")
+            print(f"class {file_path.stem.lower()} not found")
             return
         with open(file_path, 'rb') as f:
             data = f.read()
