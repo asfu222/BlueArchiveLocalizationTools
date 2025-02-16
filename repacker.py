@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import flatbuffers
 from lib.encryption import xor_with_key
+from utils.config import Config
 
 class TableRepackerImpl:
     def __init__(self, flat_data_module_name):
@@ -31,4 +32,7 @@ class TableRepackerImpl:
             builder = flatbuffers.Builder(4096)
             offset = pack_func(builder, json_data)
             builder.Finish(offset)
-            return xor_with_key(table_type, bytes(builder.Output()))
+            bytes_output = bytes(builder.Output())
+            if not Config.is_cn: # CN does not encrypt its Excel.zip (but does encrypt tables in sqlite3 databases such as ExcelDB.db)
+                bytes_output = xor_with_key(table_type, bytes_output)
+            return bytes_output

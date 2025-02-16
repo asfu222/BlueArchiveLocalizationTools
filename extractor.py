@@ -123,7 +123,8 @@ class TableExtractorImpl:
         try:
             if flatbuffer_class.__name__.endswith("Table"):
                 try:
-                    data = xor_with_key(flatbuffer_class.__name__, data)
+                    if not Config.is_cn: # CN does not encrypt its Excel.zip (but does encrypt tables in sqlite3 databases such as ExcelDB.db)
+                        data = xor_with_key(flatbuffer_class.__name__, data)
                     flat_buffer = getattr(flatbuffer_class, "GetRootAs")(data)
                     obj = getattr(self.dump_wrapper_lib, "dump_table")(flat_buffer)
                 except Exception as e:

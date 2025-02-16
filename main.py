@@ -19,6 +19,8 @@ import json
 if not os.path.exists('output'):
     os.makedirs('output')
 tbxt = TableExtractorImpl('JPExtracted.FlatData')
-with open('./output/AcademyMessanger1ExcelTable_modified.json', 'wb') as f:
-    f.write(json.dumps(tbxt.bytes2json(Path('./output/AcademyMessanger1ExcelTable.bytes')), indent=4, ensure_ascii=False).encode('utf8'))
+with open('./output/LocalizeEtcExcelTable.json', 'wb') as f:
+    f.write(json.dumps(tbxt.bytes2json(Path('./input/LocalizeEtcExcelTable.bytes')), indent=4, ensure_ascii=False).encode('utf8'))
 """
+from extractor import TablesExtractor
+TablesExtractor('JPExtracted', './input/TablesRaw').extract_tables()
