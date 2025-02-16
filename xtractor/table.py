@@ -10,7 +10,7 @@ from lib.console import notice, print
 from lib.encryption import xor_with_key, zip_password
 from lib.structure import DBTable, SQLiteDataType
 from utils.database import TableDatabase
-
+from utils.config import Config
 
 class TableExtractor:
     def __init__(
@@ -60,13 +60,13 @@ class TableExtractor:
         Returns:
             tuple[dict[str, Any], str]: Tuple with extracted dict and file name. Always have file name if success extract.
         """
+
         if not (
             flatbuffer_class := self.lower_fb_name_modules.get(
                 file_name.removesuffix(".bytes").lower(), None
             )
         ):
             return {}, ""
-
         obj = None
         try:
             if flatbuffer_class.__name__.endswith("Table"):
@@ -76,6 +76,13 @@ class TableExtractor:
                     flat_buffer = getattr(flatbuffer_class, "GetRootAs")(data)
                     obj = getattr(self.dump_wrapper_lib, "dump_table")(flat_buffer)
                 except:
+                    if file_name.endswith(".bytes") and Config.is_cn: # But CN also contains JP Excels for future use...
+                        try:
+                            data = xor_with_key(flatbuffer_class.__name__, data)
+                            flat_buffer = getattr(flatbuffer_class, "GetRootAs")(data)
+                            obj = getattr(self.dump_wrapper_lib, "dump_table")(flat_buffer)
+                        except:
+                            pass
                     pass
 
             if not obj:
