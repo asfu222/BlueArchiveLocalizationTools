@@ -234,7 +234,7 @@ class TableExtractor:
                     with open(path.join(zip_extract_folder, item_name), "wb") as f:
                         f.write(item_data)
         except Exception as e:
-            print(f"Error when process {file_name}: {e}")
+            notice(f"Error when process {file_name}: {e}")
 
     def extract_table(self, file_path: str) -> None:
         """Extract a table by file path."""
