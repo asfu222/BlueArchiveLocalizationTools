@@ -10,7 +10,7 @@ from lib.console import notice, print
 from lib.encryption import xor_with_key, zip_password
 from lib.structure import DBTable, SQLiteDataType
 from utils.database import TableDatabase
-
+from utils.config import Config
 
 class TableExtractor:
     def __init__(
@@ -163,7 +163,6 @@ class TableExtractor:
                     file_name,
                     True,
                 )
-
         return data, "", False
 
     def extract_db_file(self, file_path: str) -> bool:
