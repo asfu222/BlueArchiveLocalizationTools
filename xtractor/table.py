@@ -176,7 +176,7 @@ class TableExtractor:
                     db_extract_folder = path.join(self.extract_folder, db_name)
                     os.makedirs(db_extract_folder, exist_ok=True)
                     with open(
-                        path.join(db_extract_folder, f"{table.name}.json"),
+                        path.join(db_extract_folder, f"{table.name.replace('DBSchema', 'Excel')}.json"),
                         "wt",
                         encoding="utf8",
                     ) as f:

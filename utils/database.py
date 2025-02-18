@@ -76,5 +76,5 @@ class TableDatabase:
                 row_data[col.name] = value
             if row_data:
                 table_rows.append(row_data)
-
+        table_rows = [struct["Bytes"] for struct in table_rows] # Do not serialize duplicate data; We can figure out which ones are keys while repacking...
         return table_rows
