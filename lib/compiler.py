@@ -808,15 +808,15 @@ from . import *
                     # Handle Excel structs (case B)
                     file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_dict: dict) -> int:\n")
                     # Generate password from struct name (original name without 'Excel')
-                    #password_key = struct.name[:-5] if struct.name.endswith("Excel") else struct.name
-                    #file.write(f'    password = create_key("{password_key}")\n')
+                    password_key = struct.name[:-5] if struct.name.endswith("Excel") else struct.name
+                    file.write(f'    password = create_key("{password_key}")\n')
 
                     # Process string fields first to create their offsets
                     string_fields = [prop for prop in struct.properties if prop.data_type == "string"]
                     for prop in string_fields:
                         original_name = prop.name
                         converted_name = Utils.convert_name_to_available(original_name)
-                        file.write(f"    {converted_name}_offset = builder.CreateString(dump_dict['{original_name}'])\n")
+                        file.write(f"    {converted_name}_offset = builder.CreateString(encrypt_string(dump_dict['{original_name}'], password))\n")
 
                     # Start building the struct
                     file.write(f"    {struct_name}.Start(builder)\n")
@@ -833,7 +833,7 @@ from . import *
                             # Check if the data type is an enum
                             if data_type in self.enums_by_name:
                                 enum_type = self.enums_by_name[data_type]
-                                file.write(f"    {struct_name}.Add{original_name}(builder, getattr({data_type}, dump_dict['{original_name}']))\n")
+                                file.write(f"    {struct_name}.Add{original_name}(builder, convert_int(getattr({data_type}, dump_dict['{original_name}'], password)))\n")
                             else:
                                 # Determine the appropriate conversion/encryption function
                                 if data_type == "float":
@@ -850,7 +850,7 @@ from . import *
                                         "ulong": "convert_ulong"
                                     }
                                     func = conversion_map.get(data_type, "convert_int")
-                                file.write(f"    {struct_name}.Add{original_name}(builder, dump_dict['{original_name}'])\n")
+                                file.write(f"    {struct_name}.Add{original_name}(builder, {func}(dump_dict['{original_name}'], password))\n")
 
                     # End the struct and return the offset
                     file.write(f"    offset = {struct_name}.End(builder)\n")
