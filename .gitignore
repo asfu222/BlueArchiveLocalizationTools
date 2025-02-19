@@ -4,3 +4,6 @@ venv/
 input/
 output/
 **/Table/
+build/
+*.pyd
+*.db
