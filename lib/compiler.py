@@ -806,10 +806,12 @@ from . import *
                     file.write("    return offset\n\n")
                 else:
                     # Handle Excel structs (case B)
-                    file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_dict: dict) -> int:\n")
+                    file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_dict: dict, encrypt = True) -> int:\n")
                     # Generate password from struct name (original name without 'Excel')
                     password_key = struct.name[:-5] if struct.name.endswith("Excel") else struct.name
-                    file.write(f'    password = create_key("{password_key}")\n')
+                    file.write('    password = None\n')
+                    file.write('    if encrypt:\n')
+                    file.write(f'        password = create_key("{password_key}")\n')
 
                     # Process string fields first to create their offsets
                     string_fields = [prop for prop in struct.properties if prop.data_type == "string"]

@@ -88,6 +88,8 @@ def xor_with_key(name: str, data: bytes) -> bytes:
 
 def xor(value: bytes, key: bytes) -> bytes:
     """XOR operation between two byte arrays."""
+    if key is None:
+        return value
     if len(value) == len(key):
         return strxor(value, key)
     if len(value) < len(key):
@@ -103,57 +105,79 @@ def xor(value: bytes, key: bytes) -> bytes:
 
 def xor_struct(value: T, key: bytes, struct: Struct) -> T:
     """XOR operation with a structured binary format."""
+    if key is None:
+        return value
     packed_value = struct.pack(value)
     return struct.unpack(xor(packed_value, key))[0]
 
 
 def convert_short(value: int, key: bytes = b"") -> int:
     """Convert value to short type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, SHORT) if key else value
 
 
 def convert_ushort(value: int, key: bytes = b"") -> int:
     """Convert value to unsigned short type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, USHORT) if key else value
 
 
 def convert_int(value: int, key: bytes = b"") -> int:
     """Convert value to int type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, INT) if key else value
 
 
 def convert_uint(value: int, key: bytes = b"") -> int:
     """Convert value to unsigned int type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, UINT) if key else value
 
 
 def convert_long(value: int, key: bytes = b"") -> int:
     """Convert value to long type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, LONG) if key else value
 
 
 def convert_ulong(value: int, key: bytes = b"") -> int:
     """Convert value to unsigned long type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return xor_struct(value, key, ULONG) if key else value
 
 
 def convert_float(value: float, key: bytes = b"") -> float:
     """Convert value to float type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return (convert_int(int(value), key) * 0.00001) if key else value
 
 
 def convert_double(value: float, key: bytes = b"") -> float:
     """Convert value to double type using XOR encryption if a key is provided."""
+    if key is None:
+        return value
     return (convert_long(int(value), key) * 0.00001) if key else value
 
 
 def encrypt_float(value: float, key: bytes = b"") -> float:
     """Encrypt float value to integer-like format using XOR if a key is provided."""
+    if key is None:
+        return value
     return (convert_int(int(value * 100000), key)) if key else value
 
 
 def encrypt_double(value: float, key: bytes = b"") -> float:
     """Encrypt double value to integer-like format using XOR if a key is provided."""
+    if key is None:
+        return value
     return (convert_long(int(value * 100000), key)) if key else value
 
 
@@ -161,7 +185,8 @@ def convert_string(value: bytes | str, key: bytes = b"") -> str:
     """Decrypt or decode a base64 string or raw bytes, depending on the input."""
     if not value:
         return ""
-
+    if key is None:
+        return value
     try:
         raw = b64decode(value)
         if decoded := xor(raw, key).decode("utf16"):
@@ -172,8 +197,10 @@ def convert_string(value: bytes | str, key: bytes = b"") -> str:
             return value.decode("utf8")
 
     return ""
-def encrypt_string(value: str, key: bytes) -> str:
+def encrypt_string(value: str, key: bytes = b"") -> str:
     """Encrypt a string using XOR and encode it in properly padded Base64."""
+    if key is None:
+        return value
     raw = value.encode("utf-16le")  # Ensure UTF-16LE encoding
     encrypted = xor(raw, key)  # Apply XOR encryption
     b64_encoded = b64encode(encrypted).decode()
