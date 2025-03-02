@@ -4,6 +4,11 @@ from queue import Queue
 from threading import Thread, Lock, Event
 from time import sleep
 from keyword import kwlist
+import UnityPy
+from zipfile import ZipFile
+from UnityPy.files.File import ObjectReader
+from lib.console import ProgressBar
+import os
 
 class TemplateString:
     """
@@ -158,3 +163,182 @@ class TaskManager:
     def done(self) -> None:
         """Finish thread pool manually."""
         self.__exit__(None, None, None)
+
+class ZipUtils:
+    @staticmethod
+    def extract_zip(
+        zip_path: str | list[str],
+        dest_dir: str,
+        *,
+        keywords: list[str] | None = None,
+        zips_dir: str = "",
+        password: bytes = bytes(),
+        progress_bar: bool = True,
+    ) -> list[str]:
+        """Extracts specific files from a zip archive(s) to a destination directory.
+
+        Args:
+            zip_path (str | list[str]): Path(s) to the zip file(s).
+            dest_dir (str): Directory where files will be extracted.
+            keywords (list[str], optional): List of keywords to filter files for extraction. Defaults to None.
+            zips_dir (str, optional): Base directory for relative paths when zip_path is a list. Defaults to "".
+            progress_bar (str, optional): Create a progress bar during extract. Defaults to False.
+
+
+        Returns:
+            list[str]: List of extracted file paths.
+        """
+        if progress_bar:
+            print(f"Extracting files from {zip_path} to {dest_dir}...")
+        extract_list: list[str] = []
+        zip_files = []
+
+        if isinstance(zip_path, str):
+            zip_files = [zip_path]
+        elif isinstance(zip_path, list):
+            zip_files = [os.path.join(zips_dir, p) for p in zip_path]
+
+        os.makedirs(dest_dir, exist_ok=True)
+
+        if progress_bar:
+            bar = ProgressBar(len(extract_list), "Extract...", "items")
+        for zip_file in zip_files:
+            try:
+                with ZipFile(zip_file, "r") as z:
+                    z.setpassword(password)
+                    if keywords:
+                        extract_list = [
+                            item for k in keywords for item in z.namelist() if k in item
+                        ]
+                        for item in extract_list:
+                            try:
+                                z.extract(item, dest_dir)
+                            except Exception as e:
+                                notice(str(e))
+                            if progress_bar:
+                                bar.increase()
+                    else:
+                        z.extractall(dest_dir)
+
+            except Exception as e:
+                notice(f"Error processing file '{zip_file}': {e}")
+        if progress_bar:
+            bar.stop()
+        return extract_list
+
+    # Used to parse the area where the EOCD (End of Central Directory) of the compressed file's central directory is located.
+    @staticmethod
+    def parse_eocd_area(data: bytes) -> tuple[int, int]:
+        eocd_signature = b"\x50\x4b\x05\x06"
+        eocd_offset = data.rfind(eocd_signature)
+        if eocd_offset == -1:
+            raise EOFError("Cannot read the eocd of file.")
+        eocd = data[eocd_offset : eocd_offset + 22]
+        _, _, _, _, _, cd_size, cd_offset, _ = struct.unpack("<IHHHHIIH", eocd)
+        return cd_offset, cd_size
+
+    # Used to parse the files contained in the central directory. Use for common apk.
+    @staticmethod
+    def parse_central_directory_data(data: bytes) -> list:
+        file_headers = []
+        offset = 0
+        while offset < len(data):
+            if data[offset : offset + 4] != b"\x50\x4b\x01\x02":
+                raise BufferError("Cannot parse the central directory of file.")
+            pack = struct.unpack("<IHHHHHHIIIHHHHHII", data[offset : offset + 46])
+
+            uncomp_size = pack[9]
+            file_name_length = pack[10]
+            extra_field_length = pack[11]
+            file_comment_length = pack[12]
+            local_header_offset = pack[16]
+            file_name = data[offset + 46 : offset + 46 + file_name_length].decode(
+                "utf8"
+            )
+
+            file_headers.append(
+                {"path": file_name, "offset": local_header_offset, "size": uncomp_size}
+            )
+            offset += 46 + file_name_length + extra_field_length + file_comment_length
+
+        return file_headers
+
+    @staticmethod
+    def download_and_decompress_file(
+        apk_url: str, target_path: str, header_part: bytes, start_offset: int
+    ) -> bool:
+        """Request partial data from an online compressed file and then decompress it."""
+        try:
+            header = struct.unpack("<IHHHHHIIIHH", header_part[:30])
+            _, _, _, compression, _, _, _, comp_size, _, file_name_len, extra_len = (
+                header
+            )
+            data_start = start_offset + 30 + file_name_len + extra_len
+            data_end = data_start + comp_size
+            compressed_data = FileDownloader(
+                apk_url,
+                headers={"Range": f"bytes={data_start}-{data_end - 1}"},
+            )
+            return ZipUtils.decompress_file_part(
+                compressed_data, target_path, compression
+            )
+        except:
+            return False
+
+    @staticmethod
+    def decompress_file_part(compressed_data_part, file_path, compress_method) -> bool:
+        """Decompress pure compressed data. Return True if saved to path."""
+        try:
+            if compress_method == 8:  # Deflate compression
+                decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
+                decompressed_data = decompressor.decompress(compressed_data_part)
+                decompressed_data += decompressor.flush()
+            else:
+                decompressed_data = compressed_data_part
+            with open(file_path, "wb") as file:
+                file.write(decompressed_data)
+            return True
+        except:
+            return False
+
+
+class UnityUtils:
+    @staticmethod
+    def search_unity_pack(
+        pack_path: str,
+        data_type: list | None = None,
+        data_name: list | None = None,
+        condition_connect: bool = False,
+        read_obj_anyway: bool = False,
+    ) -> list[ObjectReader] | None:
+        """Search specified data from unity pack.
+
+        Args:
+            pack_path (str): File path.
+            data_type (list | None, optional): Data types to search. Defaults to None.
+            data_name (list | None, optional): Data name to search. Defaults to None.
+            condition_connect (bool, optional): Connect data type and data name as unique condition. Defaults to False.
+            read_obj_anyway (bool, optional): Data type does not match but read data name anyway. Defaults to False.
+
+        Returns:
+            list[UnityPy.environment.ObjectReader] | None: A list of UnityPy object.
+        """
+        data_list: list[ObjectReader] = []
+        type_passed = False
+        try:
+            env = UnityPy.load(pack_path)
+            for obj in env.objects:
+                if data_type and obj.type.name in data_type:
+                    if condition_connect:
+                        type_passed = True
+                    else:
+                        data_list.append(obj)
+                if read_obj_anyway or type_passed:
+                    data = obj.read()
+                    if data_name and data.m_Name in data_name:
+                        if not (condition_connect or type_passed):
+                            continue
+                        data_list.append(obj)
+        except:
+            pass
+        return data_list

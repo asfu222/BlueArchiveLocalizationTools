@@ -7,3 +7,4 @@ output/
 build/
 *.pyd
 *.db
+*Temp/
