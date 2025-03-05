@@ -835,7 +835,7 @@ from . import *
                             # Check if the data type is an enum
                             if data_type in self.enums_by_name:
                                 enum_type = self.enums_by_name[data_type]
-                                file.write(f"    {struct_name}.Add{original_name}(builder, convert_int(getattr({data_type}, dump_dict['{original_name}'], password)))\n")
+                                file.write(f"    {struct_name}.Add{original_name}(builder, convert_int(getattr({data_type}, dump_dict['{original_name}']), password))\n")
                             else:
                                 # Determine the appropriate conversion/encryption function
                                 if data_type == "float":
