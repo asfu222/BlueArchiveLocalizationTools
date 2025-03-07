@@ -28,6 +28,7 @@ class DataSize(Enum):
 class DataFlag(Enum):
     bool = "Bool"
     byte = "Int8"
+    sbyte = "Int8"
     ubyte = "Uint8"
     short = "Int16"
     ushort = "Uint16"
@@ -264,6 +265,7 @@ class %s:
         """
     @staticmethod
     def Add%s(builder, %s): builder.PrependUOffsetTRelativeSlot(%d, flatbuffers.number_types.UOffsetTFlags.py_type(%s), 0)
+    @staticmethod
     def Start%sVector(builder, numElems): return builder.StartVector(%d, numElems, %d)\n
 """
     )
@@ -289,6 +291,7 @@ class %s:
         """
     @staticmethod
     def Start(builder): builder.StartObject(%d)
+    @staticmethod
     def End(builder): return builder.EndObject()\n
 """
     )
@@ -774,86 +777,101 @@ class CompileToPython:
         WRAPPER_PACK_BASE = """import flatbuffers
 from lib.encryption import xor, create_key, convert_short, convert_ushort, convert_int, convert_uint, convert_long, convert_ulong, encrypt_float, encrypt_double, encrypt_string
 from . import *
-"""
+    """
         self.enums_by_name = {enum.name: enum for enum in self.enums}
-
-        """Generate repack functions for each table and struct to convert JSON back to bytes."""
+        self.structs_by_name = {struct.name : struct for struct in self.structs}
         os.makedirs(self.extract_dir, exist_ok=True)
         repack_path = os.path.join(self.extract_dir, "repack_wrapper.py")
+        
         with open(repack_path, "wt", encoding="utf8") as file:
-            # Write the base imports for repacking.
             file.write(WRAPPER_PACK_BASE)
             file.write("\n\n")
 
-            # Generate a repack function for each struct.
             for struct in self.structs:
                 struct_name = Utils.convert_name_to_available(struct.name)
                 if struct_name.endswith("ExcelTable"):
-                    # Handle ExcelTable structs (case A)
-                    record_type = struct_name[:-5]  # Remove "Table" to get the corresponding Excel struct
-                    file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_list: list) -> int:\n")
+                    record_type = struct_name[:-5]
+                    file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_list: list, encrypt=True) -> int:\n")
                     file.write("    offsets = []\n")
                     file.write("    for record in dump_list:\n")
-                    file.write(f"        offset = pack_{record_type}(builder, record)\n")
-                    file.write("        offsets.append(offset)\n")
+                    file.write(f"        offsets.append(pack_{record_type}(builder, record, encrypt))\n")
                     file.write(f"    {struct_name}.StartDataListVector(builder, len(offsets))\n")
-                    file.write("    for off in reversed(offsets):\n")
-                    file.write("        builder.PrependUOffsetTRelative(off)\n")
-                    file.write("    data_list_vector = builder.EndVector(len(offsets))\n")
+                    file.write("    for offset in reversed(offsets):\n")
+                    file.write("        builder.PrependUOffsetTRelative(offset)\n")
+                    file.write("    data_list = builder.EndVector(len(offsets))\n")
                     file.write(f"    {struct_name}.Start(builder)\n")
-                    file.write(f"    {struct_name}.AddDataList(builder, data_list_vector)\n")
-                    file.write(f"    offset = {struct_name}.End(builder)\n")
-                    file.write("    return offset\n\n")
-                else:
-                    # Handle Excel structs (case B)
-                    file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, dump_dict: dict, encrypt = True) -> int:\n")
-                    # Generate password from struct name (original name without 'Excel')
-                    password_key = struct.name[:-5] if struct.name.endswith("Excel") else struct.name
-                    file.write('    password = None\n')
-                    file.write('    if encrypt:\n')
-                    file.write(f'        password = create_key("{password_key}")\n')
+                    file.write(f"    {struct_name}.AddDataList(builder, data_list)\n")
+                    file.write(f"    return {struct_name}.End(builder)\n\n")
+                    continue
 
-                    # Process string fields first to create their offsets
-                    string_fields = [prop for prop in struct.properties if prop.data_type == "string"]
-                    for prop in string_fields:
-                        original_name = prop.name
-                        converted_name = Utils.convert_name_to_available(original_name)
-                        file.write(f"    {converted_name}_offset = builder.CreateString(encrypt_string(dump_dict['{original_name}'], password))\n")
+                file.write(f"def pack_{struct_name}(builder: flatbuffers.Builder, data: dict, encrypt=True) -> int:\n")
+                password_key = struct.name[:-5] if struct.name.endswith("Excel") else struct.name
+                file.write(f'    password = create_key("{password_key}") if encrypt else None\n')
+                
+                # Process all strings first
+                string_fields = [prop for prop in struct.properties if prop.data_type == "string" and not prop.is_list]
+                for prop in string_fields:
+                    file.write(f"    {prop.name}_off = builder.CreateString(encrypt_string(data.get('{prop.name}', ''), password))\n")
 
-                    # Start building the struct
-                    file.write(f"    {struct_name}.Start(builder)\n")
+                # Process vectors with proper element handling
+                vector_fields = [prop for prop in struct.properties if prop.is_list]
+                for prop in vector_fields:
+                    file.write(f"    {prop.name}_vec = 0\n")
+                    file.write(f"    if '{prop.name}' in data:\n")
+                    file.write(f"        {prop.name}_items = data['{prop.name}']\n")
+                    elem, data_type = self._get_conversion_code(prop, "item")
+                    if data_type == "string":
+                        file.write(f"        {prop.name}_str_offsets = [builder.CreateString(encrypt_string(item, password)) for item in {prop.name}_items]\n")
+                        file.write(f"        {struct_name}.Start{prop.name}Vector(builder, len({prop.name}_str_offsets))\n")
+                        file.write(f"        for offset in reversed({prop.name}_str_offsets):\n")
+                        file.write(f"            {struct_name}.Add{prop.name}Element(builder, offset)\n")
+                    elif data_type in self.structs_by_name:
+                        elem = f"pack_{data_type}(builder, item, encrypt)"
+                    else:
+                        if data_type not in DataFlag.__members__:
+                            print(data_type)
+                        file.write(f"        {struct_name}.Start{prop.name}Vector(builder, len({prop.name}_items))\n")
+                        file.write(f"        for item in reversed({prop.name}_items):\n")
+                        file.write(f"            builder.Prepend{DataFlag.__members__.get(data_type, DataFlag.int).value}({elem})\n")
+                    
+                    file.write(f"        {prop.name}_vec = builder.EndVector(len({prop.name}_items))\n")
 
-                    # Add each field in the order of struct.properties
-                    for prop in struct.properties:
-                        original_name = prop.name
-                        converted_name = Utils.convert_name_to_available(original_name)
-                        data_type = prop.data_type
+                # Process scalar values
+                scalar_fields = [prop for prop in struct.properties if not prop.is_list and prop.data_type != "string"]
+                for prop in scalar_fields:
+                    conv_code, _ = self._get_conversion_code(prop, f"data.get('{prop.name}', 0)")
+                    file.write(f"    {prop.name}_val = {conv_code}\n")
 
-                        if data_type == "string":
-                            file.write(f"    {struct_name}.Add{original_name}(builder, {converted_name}_offset)\n")
-                        else:
-                            # Check if the data type is an enum
-                            if data_type in self.enums_by_name:
-                                enum_type = self.enums_by_name[data_type]
-                                file.write(f"    {struct_name}.Add{original_name}(builder, convert_int(getattr({data_type}, dump_dict['{original_name}']), password))\n")
-                            else:
-                                # Determine the appropriate conversion/encryption function
-                                if data_type == "float":
-                                    func = "encrypt_float"
-                                elif data_type == "double":
-                                    func = "encrypt_double"
-                                else:
-                                    conversion_map = {
-                                        "short": "convert_short",
-                                        "ushort": "convert_ushort",
-                                        "int": "convert_int",
-                                        "uint": "convert_uint",
-                                        "long": "convert_long",
-                                        "ulong": "convert_ulong"
-                                    }
-                                    func = conversion_map.get(data_type, "convert_int")
-                                file.write(f"    {struct_name}.Add{original_name}(builder, {func}(dump_dict['{original_name}'], password))\n")
+                # Build final object
+                file.write(f"    {struct_name}.Start(builder)\n")
+                for prop in struct.properties:
+                    if prop in string_fields:
+                        file.write(f"    {struct_name}.Add{prop.name}(builder, {prop.name}_off)\n")
+                    elif prop in vector_fields:
+                        file.write(f"    {struct_name}.Add{prop.name}(builder, {prop.name}_vec)\n")
+                    else:
+                        file.write(f"    {struct_name}.Add{prop.name}(builder, {prop.name}_val)\n")
+                file.write(f"    return {struct_name}.End(builder)\n\n")
 
-                    # End the struct and return the offset
-                    file.write(f"    offset = {struct_name}.End(builder)\n")
-                    file.write("    return offset\n\n")
+    def _get_conversion_code(self, prop, value_var):
+        """Helper to generate type-specific conversion code"""
+        data_type = prop.data_type
+        if data_type == "bool":
+            return value_var, data_type
+        if data_type in self.enums_by_name:
+            return f"convert_int(getattr({data_type}, {value_var}), password)", "int"
+        elif data_type == "float":
+            return f"encrypt_float({value_var}, password)", data_type
+        elif data_type == "double":
+            return f"encrypt_double({value_var}, password)", data_type
+        else:
+            conversion_map = {
+                "short": "convert_short",
+                "ushort": "convert_ushort",
+                "int": "convert_int",
+                "uint": "convert_uint",
+                "long": "convert_long",
+                "ulong": "convert_ulong"
+            }
+            func = conversion_map.get(data_type, "convert_int")
+            return f"{func}({value_var}, password)", data_type
