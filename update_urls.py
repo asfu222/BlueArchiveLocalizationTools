@@ -108,6 +108,31 @@ def get_server_url() -> str:
     if not version:
         notice("Cannot retrieve apk version data.")
     return url
+def get_addressable_catalog_url(server_url: str) -> str:
+    """Fetches and extracts the latest AddressablesCatalogUrlRoot from the server URL."""
+    response = requests.get(server_url)
+    if response.status_code != 200:
+        raise LookupError(f"Failed to fetch data from {server_url}. Status code: {response.status_code}")
+    
+    # Parse the JSON response
+    data = response.json()
+
+    # Extract the last AddressablesCatalogUrlRoot from the OverrideConnectionGroups
+    connection_groups = data.get("ConnectionGroups", [])
+    if not connection_groups:
+        raise LookupError("Cannot find ConnectionGroups in the server response.")
+    
+    # Get the last OverrideConnectionGroup
+    override_groups = connection_groups[0].get("OverrideConnectionGroups", [])
+    if not override_groups:
+        raise LookupError("Cannot find OverrideConnectionGroups in the server response.")
+
+    # Get the last AddressablesCatalogUrlRoot in the list
+    latest_catalog_url = override_groups[-1].get("AddressablesCatalogUrlRoot")
+    if not latest_catalog_url:
+        raise LookupError("Cannot find AddressablesCatalogUrlRoot in the last entry of OverrideConnectionGroups.")
+    
+    return latest_catalog_url
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update Yostar server URL for Blue Archive JP")
     parser.add_argument("output_path", help="output file for server url")
@@ -116,4 +141,6 @@ if __name__ == "__main__":
     apk_path = download_apk_file(APK_URL)
     extract_apk_file(apk_path)
     with open(args.output_path, "wb") as fs:
-        fs.write(f"BA_SERVER_URL={get_server_url()}".encode())
+        server_url = get_server_url()
+        addressable_catalog_url = get_addressable_catalog_url(server_url)
+        fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}".encode())
