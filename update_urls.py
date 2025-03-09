@@ -7,6 +7,7 @@ import base64
 from lib.encryption import convert_string, create_key
 import json
 import argparse
+import requests
 APK_URL = "https://d.apkpure.com/b/XAPK/com.YostarJP.BlueArchive?version=latest&nc=arm64-v8a&sv=24"
 TEMP_DIR = "Temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
