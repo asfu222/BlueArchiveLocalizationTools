@@ -25,6 +25,10 @@ def apply_replacements(input_filepath, replacements_filepath):
 
 def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) -> None:
     import setup_flatdata
+    import os
+    print("Printing directory: " + str(os.listdir("./")))
+    print("Extracted " + str(os.listdir("./Extracted")))
+    print("FlatData directory " + str(os.listdir("./Extracted/FlatData")))
     packer = TableRepackerImpl('Extracted.FlatData')
     source_dir = Path(f'Extracted/Table/{excel_input_path.stem}')
     if not source_dir.exists():
