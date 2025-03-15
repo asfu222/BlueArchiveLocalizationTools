@@ -36,3 +36,4 @@ if not path.exists(path.join(EXTRACT_DIR, "FlatData")):
     )
     notice("Dump il2cpp binary file successfully.")
     compile_python(path.join(extract_path, "dump.cs"), EXTRACT_DIR)
+    notice("Generated FlatData to dir: " + EXTRACT_DIR)
