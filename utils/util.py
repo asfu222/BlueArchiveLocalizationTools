@@ -9,6 +9,7 @@ from zipfile import ZipFile
 from UnityPy.files.File import ObjectReader
 from lib.console import ProgressBar
 import os
+import subprocess
 
 class TemplateString:
     """
@@ -342,3 +343,72 @@ class UnityUtils:
         except:
             pass
         return data_list
+class FileUtils:
+    @staticmethod
+    def find_files(
+        directory: str,
+        keywords: list[str],
+        absolute_match: bool = False,
+        sequential_match: bool = False,
+    ) -> list[str]:
+        """Retrieve files from a given directory based on specified keywords of file name.
+
+        Args:
+            directory (str): The directory to search for files.
+            keywords (list[str]): A list of keywords to match file names.
+            absolute_match (bool, optional): If True, matches file names exactly with the keywords. If False, performs a partial match (i.e., checks if any keyword is a substring of the file name). Defaults to False.
+            sequential_match (bool, optional): If True, the final list will be matched sequentially based on the order of the provided keywords. If a keyword has multiple values, only one will be retained. A keyword that no result to be retrieved will correspond to a None value. Defaults to False.
+        Returns:
+            list[str]: A list of file paths that match the specified criteria.
+        """
+        paths = []
+        for dir_path, _, files in os.walk(directory):
+            for file in files:
+                if absolute_match and file in keywords:
+                    paths.append(os.path.join(dir_path, file))
+                elif not absolute_match and any(
+                    keyword in file for keyword in keywords
+                ):
+                    paths.append(os.path.join(dir_path, file))
+
+        if not sequential_match:
+            return paths
+
+        sorted_paths = []
+        # Sequential match part.
+        for key in keywords:
+            for p in paths:
+                if key in p:
+                    sorted_paths.append(p)
+                    break
+
+        return sorted_paths
+class CommandUtils:
+    @staticmethod
+    def run_command(
+        *commands: str,
+        cwd: str | None = None,
+    ) -> tuple[bool, str]:
+        """
+        Executes a shell command and returns whether it succeeded.
+
+        Args:
+            *commands (str): Command and its arguments as separate strings.
+
+        Returns:
+            tuple (bool, str): True if the command succeeded, False otherwise. And error string.
+        """
+        try:
+            subprocess.run(
+                list(commands),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                text=True,
+                cwd=cwd,
+                encoding="utf8",
+            )
+            return True, ""
+        except Exception as e:
+            err = f"Command failed while excute command '{' '.join(list(commands))}' with error: {e}."
+            return False, err

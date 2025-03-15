@@ -1,6 +1,5 @@
-from lib.downloader import FileDownloader
-from lib.console import ProgressBar, notice, print
-from utils.util import UnityUtils, ZipUtils
+from lib.console import notice, print
+from utils.util import UnityUtils
 from os import path
 import os
 import base64
@@ -8,55 +7,8 @@ from lib.encryption import convert_string, create_key
 import json
 import argparse
 import requests
-APK_URL = "https://d.apkpure.com/b/XAPK/com.YostarJP.BlueArchive?version=latest&nc=arm64-v8a&sv=24"
+import setup_apk
 TEMP_DIR = "Temp"
-os.makedirs(TEMP_DIR, exist_ok=True)
-def download_apk_file(apk_url: str) -> str:
-    print("Download APK to retrieve server URL...")
-    if not (
-        (
-            apk_req := FileDownloader(
-                apk_url,
-                request_method="get",
-                use_cloud_scraper=True,
-            )
-        )
-        and (apk_data := apk_req.get_response(True))
-    ):
-        raise LookupError("Cannot fetch apk info.")
-
-    apk_path = path.join(
-        TEMP_DIR,
-        apk_data.headers["Content-Disposition"]
-        .rsplit('"', 2)[-2]
-        .encode("ISO8859-1")
-        .decode(),
-    )
-    apk_size = int(apk_data.headers.get("Content-Length", 0))
-
-    if path.exists(apk_path) and path.getsize(apk_path) == apk_size:
-        return apk_path
-
-    with ProgressBar(apk_size, "Downloading APK...", "B") as bar:
-        bar.item_text(apk_path.split("/")[-1])
-        FileDownloader(
-            apk_url,
-            request_method="get",
-            enable_progress=True,
-            use_cloud_scraper=True,
-        ).save_file(apk_path)
-
-    return apk_path
-
-def extract_apk_file(apk_path: str) -> None:
-    """Extract the XAPK file."""
-    apk_files = ZipUtils.extract_zip(
-        apk_path, path.join(TEMP_DIR), keywords=["apk"]
-    )
-
-    ZipUtils.extract_zip(
-        apk_files, path.join(TEMP_DIR, "Data"), zips_dir=TEMP_DIR
-    )
 def decode_server_url(data: bytes) -> str:
     """
     Decodes the server URL from the given data.
@@ -139,8 +91,6 @@ if __name__ == "__main__":
     parser.add_argument("output_path", help="output file for server url")
 
     args = parser.parse_args()
-    apk_path = download_apk_file(APK_URL)
-    extract_apk_file(apk_path)
     with open(args.output_path, "wb") as fs:
         server_url = get_server_url()
         addressable_catalog_url = get_addressable_catalog_url(server_url)
