@@ -31,14 +31,12 @@ def download_apk_file(apk_url: str) -> str:
     if path.exists(apk_path) and path.getsize(apk_path) == apk_size:
         return apk_path
 
-    with ProgressBar(apk_size, "Downloading APK...", "B") as bar:
-        bar.item_text(apk_path.split("/")[-1])
-        FileDownloader(
-            apk_url,
-            request_method="get",
-            enable_progress=True,
-            use_cloud_scraper=True,
-        ).save_file(apk_path)
+    FileDownloader(
+        apk_url,
+        request_method="get",
+        enable_progress=True,
+        use_cloud_scraper=True,
+    ).save_file(apk_path)
 
     return apk_path
 
