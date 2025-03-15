@@ -23,7 +23,7 @@ def apply_replacements(input_filepath, replacements_filepath):
     with open(input_filepath, "wb") as out_f:
         out_f.write(json.dumps(data, separators=(',', ':'), ensure_ascii=False).encode())
 
-def main(excel_input_path: Path, repl_input_dir: Path) -> None:
+def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) -> None:
     import setup_flatdata
     packer = TableRepackerImpl('Extracted.FlatData')
     source_dir = Path(f'Extracted/Table/{excel_input_path.stem}')
@@ -37,7 +37,7 @@ def main(excel_input_path: Path, repl_input_dir: Path) -> None:
             for item in excel_zip.infolist():
                 temp_zip.writestr(item.filename, excel_zip.read(item.filename))
 
-        with ZipFile(excel_input_path, "w") as excel_zip:
+        with ZipFile(output_filepath, "w") as excel_zip:
             excel_zip.setpassword(zip_password("Excel.zip"))
             zip_data.seek(0)
             with ZipFile(zip_data, "r") as temp_zip:
@@ -53,5 +53,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
     parser.add_argument("excel_input_path", type=Path, help="Path to the directory containing Excel.zip.")
     parser.add_argument("repl_input_dir", type=Path, help="Path to the directory containing replacement files for Excel.zip.")
+    parser.add_argument("output_filepath", type=Path, nargs="?", default=None, help="Path to save the modified Excel.zip. Defaults to the input file path.")
     args = parser.parse_args()
-    main(args.excel_input_path, args.repl_input_dir)
+
+    output_filepath = args.output_filepath if args.output_filepath else args.excel_input_path
+    main(args.excel_input_path, args.repl_input_dir, output_filepath)
