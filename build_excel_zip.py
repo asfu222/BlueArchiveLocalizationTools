@@ -1,12 +1,13 @@
 import argparse
 import json
+import subprocess
+import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 from extractor import TablesExtractor
 from repacker import TableRepackerImpl
 from lib.encryption import zip_password
 from lib.console import notice
-import io
 
 def apply_replacements(input_filepath, replacements_filepath):
     with open(input_filepath, "r", encoding="utf8") as inp_f:
@@ -30,30 +31,30 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
     if not source_dir.exists():
         TablesExtractor('Extracted', excel_input_path.parent).extract_table(excel_input_path.name)
     
-    with ZipFile(excel_input_path, "r") as excel_zip:
-        excel_zip.setpassword(zip_password("Excel.zip"))
-        zip_data = io.BytesIO()
-        with ZipFile(zip_data, "w") as temp_zip:
-            for item in excel_zip.infolist():
-                temp_zip.writestr(item.filename, excel_zip.read(item.filename))
-
-        with ZipFile(output_filepath, "w") as excel_zip:
+    with tempfile.TemporaryDirectory() as temp_extract_dir:
+        temp_extract_path = Path(temp_extract_dir)
+        with ZipFile(excel_input_path, "r") as excel_zip:
             excel_zip.setpassword(zip_password("Excel.zip"))
-            zip_data.seek(0)
-            with ZipFile(zip_data, "r") as temp_zip:
-                for file in source_dir.iterdir():
-                    repl_file = repl_input_dir / file.name
-                    if not repl_file.exists():
-                        excel_zip.writestr(f"{file.stem.lower()}.bytes", temp_zip.read(f"{file.stem.lower()}.bytes"))
-                        continue
-                    apply_replacements(file, repl_file)
-                    excel_zip.writestr(f"{file.stem.lower()}.bytes", packer.repackExcelZipJson(file))
-        notice(f"Outputted modified zip to {output_filepath}")
+            excel_zip.extractall(path=temp_extract_path)
+        
+        for file in source_dir.iterdir():
+            target_file = temp_extract_path / f"{file.stem.lower()}.bytes"
+            repl_file = repl_input_dir / file.name
+            if repl_file.exists():
+                apply_replacements(file, repl_file)
+                new_content = packer.repackExcelZipJson(file)
+                with open(target_file, "wb") as tf:
+                    tf.write(new_content)
+        password_str = zip_password("Excel.zip").decode()
+        cmd = ["zip", "-r", "-9", "-P", password_str, str(output_filepath), "."]
+        subprocess.run(cmd, cwd=temp_extract_path, check=True)
+    
+    notice(f"Outputted modified zip to {output_filepath}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
-    parser.add_argument("excel_input_path", type=Path, help="Path to the directory containing Excel.zip.")
-    parser.add_argument("repl_input_dir", type=Path, help="Path to the directory containing replacement files for Excel.zip.")
+    parser.add_argument("excel_input_path", type=Path, help="Path to the Excel.zip file.")
+    parser.add_argument("repl_input_dir", type=Path, help="Path to the directory with replacement files for Excel.zip.")
     parser.add_argument("output_filepath", type=Path, nargs="?", default=None, help="Path to save the modified Excel.zip. Defaults to the input file path.")
     args = parser.parse_args()
 
