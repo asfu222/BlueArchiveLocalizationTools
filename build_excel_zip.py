@@ -48,6 +48,7 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
                         continue
                     apply_replacements(file, repl_file)
                     excel_zip.writestr(f"{file.stem.lower()}.bytes", packer.repackExcelZipJson(file))
+        notice(f"Outputted modified zip to {output_filepath}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
