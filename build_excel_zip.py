@@ -60,7 +60,7 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
                 with open(target_file, "wb") as tf:
                     tf.write(new_content)
         password_str = zip_password("Excel.zip").decode()
-        cmd = ["zip", "-r", "-9", "-P", password_str, str(output_filepath.resolve()), "."]
+        cmd = ["zip", "-r", "-X", "-9", "-P", password_str, str(output_filepath.resolve()), "."]
         subprocess.run(cmd, cwd=temp_extract_path, check=True)
     
     notice(f"Outputed modified zip to {output_filepath}")
