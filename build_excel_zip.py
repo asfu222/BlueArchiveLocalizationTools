@@ -8,6 +8,7 @@ from extractor import TablesExtractor
 from repacker import TableRepackerImpl
 from lib.encryption import zip_password
 from lib.console import notice
+import shutil
 
 def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
     with open(input_filepath, "r", encoding="utf8") as inp_f:
@@ -62,7 +63,9 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
         password_str = zip_password("Excel.zip").decode()
         cmd = ["zip", "-r", "-X", "-9", "-P", password_str, str(output_filepath.resolve()), "."]
         subprocess.run(cmd, cwd=temp_extract_path, check=True)
-    
+    temp_dir = source_dir / "temp"
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
     notice(f"Outputed modified zip to {output_filepath}")
 
 if __name__ == "__main__":
