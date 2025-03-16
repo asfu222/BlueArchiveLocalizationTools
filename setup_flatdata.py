@@ -1,8 +1,8 @@
-import setup_apk
 from os import path
 EXTRACT_DIR = "Extracted"
 DUMP_PATH = "Dumps"
 if not path.exists(path.join(EXTRACT_DIR, "FlatData")):
+    import setup_apk
     from lib.dumper import IL2CppDumper
     from lib.console import notice
     from utils.util import FileUtils
