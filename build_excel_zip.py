@@ -9,47 +9,61 @@ from repacker import TableRepackerImpl
 from lib.encryption import zip_password
 from lib.console import notice
 
-def apply_replacements(input_filepath, replacements_filepath):
+def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
     with open(input_filepath, "r", encoding="utf8") as inp_f:
         data = json.loads(inp_f.read())
     with open(replacements_filepath, "r", encoding="utf8") as repl_f:
         replacements = json.loads(repl_f.read())
-    for struct in data:
-        for field in struct:
-            if field not in replacements:
-                continue
-            if struct[field] not in replacements[field]:
-                continue
-            struct[field] = replacements[field][struct[field]]
-    with open(input_filepath, "wb") as out_f:
+    for repl_obj in replacements:
+        fields = repl_obj["fields"]
+        mapping_list = repl_obj["mappings"]
+        
+        lookup = {tuple(mapping["old"]): mapping["new"] for mapping in mapping_list}
+        
+        for struct in data:
+            key = tuple(struct[field] for field in fields)
+            if key in lookup:
+                new_values = lookup[key]
+                for idx, field in enumerate(fields):
+                    struct[field] = new_values[idx]
+    out_path = input_filepath.parent / "temp" / input_filepath.name
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+        
+    with open(out_path, "wb") as out_f:
         out_f.write(json.dumps(data, separators=(',', ':'), ensure_ascii=False).encode())
+        return out_path
+
 
 def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) -> None:
     import setup_flatdata
     packer = TableRepackerImpl('Extracted.FlatData')
     source_dir = Path(f'Extracted/Table/{excel_input_path.stem}')
     if not source_dir.exists():
+        notice("Extracting source zip JSONs...")
         TablesExtractor('Extracted', excel_input_path.parent).extract_table(excel_input_path.name)
     
     with tempfile.TemporaryDirectory() as temp_extract_dir:
         temp_extract_path = Path(temp_extract_dir)
         with ZipFile(excel_input_path, "r") as excel_zip:
+            notice("Extracting source zip binaries...")
             excel_zip.setpassword(zip_password("Excel.zip"))
             excel_zip.extractall(path=temp_extract_path)
-        
+        notice("Applying replacements...")
         for file in source_dir.iterdir():
             target_file = temp_extract_path / f"{file.stem.lower()}.bytes"
             repl_file = repl_input_dir / file.name
             if repl_file.exists():
-                apply_replacements(file, repl_file)
-                new_content = packer.repackExcelZipJson(file)
+                out_file = apply_replacements(file, repl_file)
+                new_content = packer.repackExcelZipJson(out_file)
+                if out_file.exists():
+                    out_file.unlink()
                 with open(target_file, "wb") as tf:
                     tf.write(new_content)
         password_str = zip_password("Excel.zip").decode()
         cmd = ["zip", "-r", "-9", "-P", password_str, str(output_filepath.resolve()), "."]
         subprocess.run(cmd, cwd=temp_extract_path, check=True)
     
-    notice(f"Outputted modified zip to {output_filepath}")
+    notice(f"Outputed modified zip to {output_filepath}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
