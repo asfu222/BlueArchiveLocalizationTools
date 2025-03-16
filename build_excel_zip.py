@@ -7,7 +7,6 @@ from zipfile import ZipFile
 from extractor import TablesExtractor
 from repacker import TableRepackerImpl
 from lib.encryption import zip_password
-from lib.console import notice
 import shutil
 
 def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
@@ -40,16 +39,16 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
     packer = TableRepackerImpl('Extracted.FlatData')
     source_dir = Path(f'Extracted/Table/{excel_input_path.stem}')
     if not source_dir.exists():
-        notice("Extracting source zip JSONs...")
+        print("Extracting source zip JSONs...")
         TablesExtractor('Extracted', excel_input_path.parent).extract_table(excel_input_path.name)
     
     with tempfile.TemporaryDirectory() as temp_extract_dir:
         temp_extract_path = Path(temp_extract_dir)
         with ZipFile(excel_input_path, "r") as excel_zip:
-            notice("Extracting source zip binaries...")
+            print("Extracting source zip binaries...")
             excel_zip.setpassword(zip_password("Excel.zip"))
             excel_zip.extractall(path=temp_extract_path)
-        notice("Applying replacements...")
+        print("Applying replacements...")
         for file in source_dir.iterdir():
             target_file = temp_extract_path / f"{file.stem.lower()}.bytes"
             repl_file = repl_input_dir / file.name
@@ -66,7 +65,7 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
     temp_dir = source_dir / "temp"
     if temp_dir.exists():
         shutil.rmtree(temp_dir)
-    notice(f"Outputed modified zip to {output_filepath}")
+    print(f"Outputed modified zip to {output_filepath}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
