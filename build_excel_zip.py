@@ -46,7 +46,6 @@ def main(excel_input_path: Path, repl_input_dir: Path, output_filepath: Path) ->
         print("Extracting source zip binaries...")
         source_binary_dir.mkdir(parents=True, exist_ok=True)
         with ZipFile(excel_input_path, "r") as excel_zip:
-            print("Extracting source zip binaries...")
             excel_zip.setpassword(zip_password("Excel.zip"))
             excel_zip.extractall(path=source_binary_dir)
     with tempfile.TemporaryDirectory() as temp_extract_dir:
