@@ -7,6 +7,8 @@ from lib.encryption import convert_string, create_key
 import json
 import argparse
 import requests
+import subprocess
+import re
 import setup_apk
 TEMP_DIR = "Temp"
 def decode_server_url(data: bytes) -> str:
@@ -86,6 +88,27 @@ def get_addressable_catalog_url(server_url: str) -> str:
         raise LookupError("Cannot find AddressablesCatalogUrlRoot in the last entry of OverrideConnectionGroups.")
     
     return latest_catalog_url
+    
+def get_apk_version_info(apk_path):
+    # Run aapt dump badging on the APK
+    result = subprocess.run(['aapt', 'dump', 'badging', apk_path], capture_output=True, text=True, encoding = 'utf8')
+
+    # Check if the command was successful
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}")
+        return None
+    
+    # Extract versionCode and versionName using regex
+    match = re.search(r"versionCode='(\d+)' versionName='([\d.]+)'", result.stdout)
+    
+    if match:
+        version_code = match.group(1)
+        version_name = match.group(2)
+        return version_code, version_name
+    else:
+        print("No version info found.")
+        return None
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update Yostar server URL for Blue Archive JP")
     parser.add_argument("output_path", help="output file for server url")
@@ -94,4 +117,5 @@ if __name__ == "__main__":
     with open(args.output_path, "wb") as fs:
         server_url = get_server_url()
         addressable_catalog_url = get_addressable_catalog_url(server_url)
-        fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}".encode())
+        versionCode, versionName = get_apk_version_info(path.join(TEMP_DIR, "com.YostarJP.BlueArchive.apk"))
+        fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}\nBA_VERSION_CODE={versionCode}\nBA_VERSION_NAME={versionName}".encode())
