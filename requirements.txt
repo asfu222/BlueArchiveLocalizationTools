@@ -6,3 +6,4 @@ pycryptodome
 flatbuffers
 pykakasi
 cloudscraper
+pyaxmlparser

@@ -88,26 +88,42 @@ def get_addressable_catalog_url(server_url: str) -> str:
         raise LookupError("Cannot find AddressablesCatalogUrlRoot in the last entry of OverrideConnectionGroups.")
     
     return latest_catalog_url
-    
-def get_apk_version_info(apk_path):
-    # Run aapt dump badging on the APK
-    result = subprocess.run(['aapt', 'dump', 'badging', apk_path], capture_output=True, text=True, encoding = 'utf8')
 
-    # Check if the command was successful
-    if result.returncode != 0:
-        print(f"Error: {result.stderr}")
+import zipfile
+import xml.etree.ElementTree as ET
+from pyaxmlparser.axmlprinter import AXMLPrinter # Ensure this comes from your maintained AXMLParser package
+
+def get_apk_version_info(apk_path):
+    try:
+        # Open the APK as a ZIP file and read the binary AndroidManifest.xml
+        with zipfile.ZipFile(apk_path, 'r') as apk:
+            manifest_content = apk.read('AndroidManifest.xml')
+        
+        # Use AXMLPrinter to convert the binary XML into plain text XML.
+        # This class should also do the necessary cleanup of namespace URIs.
+        xml_str = AXMLPrinter(manifest_content).get_xml()
+        
+        # Parse the XML string with ElementTree.
+        root = ET.fromstring(xml_str)
+        
+        # The version attributes are usually in the 'android' namespace.
+        # The AXMLPrinter (per docs) should have cleaned up the namespace URIs.
+        # Here we explicitly define the expected android namespace.
+        android_ns = "http://schemas.android.com/apk/res/android"
+        
+        # Extract versionCode and versionName using the namespace-qualified keys.
+        version_code = root.attrib.get(f"{{{android_ns}}}versionCode")
+        version_name = root.attrib.get(f"{{{android_ns}}}versionName")
+        
+        if version_code and version_name:
+            return version_code, version_name
+        else:
+            print("Error: versionCode or versionName not found in the manifest.")
+            return None
+    except Exception as e:
+        notice(f"Error extracting version info from manifest: {e}")
         return None
-    
-    # Extract versionCode and versionName using regex
-    match = re.search(r"versionCode='(\d+)' versionName='([\d.]+)'", result.stdout)
-    
-    if match:
-        version_code = match.group(1)
-        version_name = match.group(2)
-        return version_code, version_name
-    else:
-        print("No version info found.")
-        return None
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update Yostar server URL for Blue Archive JP")
