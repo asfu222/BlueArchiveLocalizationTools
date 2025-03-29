@@ -21,7 +21,7 @@ def patch_voice_excel(voice_excel_path: Path, voice_file_names):
         voice_data.append({
             "UniqueId": uid_c,
             "Id": id_c,
-            "Nation_": [
+            "Nation": [
                 "All"
             ],
             "Path": [
