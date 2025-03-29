@@ -80,7 +80,7 @@ class TableRepackerImpl:
                     raise ValueError(f"Pack function for {table_type} not found")
                 
                 # Pack data
-                print(entry['Path'])
+                #print(entry['Path'])
                 offset = pack_func(builder, entry, False)
                 builder.Finish(offset)
                 bytes_output = bytes(builder.Output())
