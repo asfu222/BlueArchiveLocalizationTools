@@ -36,7 +36,7 @@ def main(voice_file_names_path: Path, excel_input_path: Path, repl_input_dir: Pa
     print(f"Outputed modified DB to {output_filepath}")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
-    parser.add_argument("voice_file_names_path", type=Path, help="Path to voice_file_names_path.json for voice stuff.")
+    parser.add_argument("voice_file_names_path", type=Path, help="Path to voice_file_names.json for voice stuff.")
     parser.add_argument("excel_input_path", type=Path, help="Path to the ExcelDB.db file.")
     parser.add_argument("repl_input_dir", type=Path, help="Path to the directory with replacement files for ExcelDB.db.")
     parser.add_argument("output_filepath", type=Path, nargs="?", default=None, help="Path to save the modified ExcelDB.db. Defaults to the input file path.")
