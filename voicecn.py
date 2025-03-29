@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import argparse
+import shutil
 from lib.encryption import zip_password
 def patch_voice_excel(voice_excel_path: Path, voice_file_names):
     with open(voice_excel_path, "r", encoding = "utf8") as f:
@@ -79,6 +80,12 @@ def generate_voice_zip(gamedata_root: Path):
         password_str = zip_password(voice_parent.name.lower())
         cmd = ["zip", "-r", "-X", "-9", "-P", password_str, voice_parent.name, "."]
         subprocess.run(cmd, cwd=voice_parent, check=True)
+        zip_filename = voice_parent.with_suffix('.zip')
+        created_zip = voice_parent / zip_filename.name
+        destination = voice_parent.parent / zip_filename.name
+        shutil.move(str(created_zip), str(destination))
+        if voice_parent.exists():
+            shutil.rmtree(str(voice_parent))
         print(f"Built voice zip for {voice_parent.name}")
     for file in gamedata_root.rglob("*.ogg"):
         file.unlink()
