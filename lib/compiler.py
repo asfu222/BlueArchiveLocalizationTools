@@ -824,7 +824,7 @@ from . import *
                         file.write(f"        {prop.name}_str_offsets = [builder.CreateString(encrypt_string(item, password)) for item in {prop.name}_items]\n")
                         file.write(f"        {struct_name}.Start{prop.name}Vector(builder, len({prop.name}_str_offsets))\n")
                         file.write(f"        for offset in reversed({prop.name}_str_offsets):\n")
-                        file.write(f"            {struct_name}.Add{prop.name}Element(builder, offset)\n")
+                        file.write(f"            builder.PrependUOffsetTRelative(offset)\n")
                     elif data_type in self.structs_by_name:
                         elem = f"pack_{data_type}(builder, item, encrypt)"
                     else:
