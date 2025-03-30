@@ -9,6 +9,7 @@ import argparse
 import requests
 import subprocess
 import re
+from pathlib import Path
 import setup_apk
 TEMP_DIR = "Temp"
 def decode_server_url(data: bytes) -> str:
@@ -63,7 +64,7 @@ def get_server_url() -> str:
     if not version:
         notice("Cannot retrieve apk version data.")
     return url
-def get_addressable_catalog_url(server_url: str) -> str:
+def get_addressable_catalog_url(server_url: str, json_output_path: Path) -> str:
     """Fetches and extracts the latest AddressablesCatalogUrlRoot from the server URL."""
     response = requests.get(server_url)
     if response.status_code != 200:
@@ -86,7 +87,8 @@ def get_addressable_catalog_url(server_url: str) -> str:
     latest_catalog_url = override_groups[-1].get("AddressablesCatalogUrlRoot")
     if not latest_catalog_url:
         raise LookupError("Cannot find AddressablesCatalogUrlRoot in the last entry of OverrideConnectionGroups.")
-    
+    with open(json_output_path, "wb") as f:
+        f.write(json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode())
     return latest_catalog_url
 
 import zipfile
@@ -127,11 +129,12 @@ def get_apk_version_info(apk_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update Yostar server URL for Blue Archive JP")
-    parser.add_argument("output_path", help="output file for server url")
+    parser.add_argument("output_path", type=Path, help="output file for server url")
+    parser.add_argument("json_output_path", type=Path, help="output file for json from server url")
 
     args = parser.parse_args()
     with open(args.output_path, "wb") as fs:
         server_url = get_server_url()
-        addressable_catalog_url = get_addressable_catalog_url(server_url)
+        addressable_catalog_url = get_addressable_catalog_url(server_url, args.json_output_path)
         versionCode, versionName = get_apk_version_info(path.join(TEMP_DIR, "com.YostarJP.BlueArchive.apk"))
         fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}\nBA_VERSION_CODE={versionCode}\nBA_VERSION_NAME={versionName}".encode())
