@@ -32,7 +32,7 @@ def main(voice_file_names_path: Path, excel_input_path: Path, repl_input_dir: Pa
     packer.repackjson2db(voice_excel_path, output_filepath)
     if temp_dir.exists():
         shutil.rmtree(temp_dir)
-    rebuild_database(output_filepath)
+    #rebuild_database(output_filepath)
     print(f"Outputed modified DB to {output_filepath}")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process Excel files and apply replacements.")
