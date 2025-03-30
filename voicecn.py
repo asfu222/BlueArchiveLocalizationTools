@@ -77,7 +77,7 @@ def generate_voice_zip(gamedata_root: Path):
         file.rename(new_name)
         voice_parents.add(file.parent)
     for voice_parent in voice_parents:
-        password_str = zip_password(voice_parent.name.lower())
+        password_str = zip_password(voice_parent.with_suffix(".zip").name.lower())
         cmd = ["zip", "-r", "-X", "-9", "-P", password_str, voice_parent.name, "."]
         subprocess.run(cmd, cwd=voice_parent, check=True)
         zip_filename = voice_parent.with_suffix('.zip')
