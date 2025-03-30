@@ -68,27 +68,64 @@ def build_scenario_script(input_filepath, output_filepath):
         f_out.write(json.dumps(data, ensure_ascii=False, indent=4).encode('utf-8'))
     
     print(f"Deployment scenario script saved to {output_filepath}")
-def generate_voice_zip(gamedata_root: Path):
+def generate_voice_zip(gamedata_root: Path) -> list[Path]:
+    MAX_ZIP_SIZE = 10 * 1024 * 1024  # 10MB
     voice_parents = set()
     voice_file_names = []
+
+    # Collect .ogg files, rename to lowercase, and group by parent folder
     for file in gamedata_root.rglob("*.ogg"):
-        voice_file_names.append(file.relative_to(gamedata_root))
         new_name = file.with_name(file.name.lower())
         file.rename(new_name)
-        voice_parents.add(file.parent)
+        voice_parents.add(new_name.parent)
+
     for voice_parent in voice_parents:
-        password_str = zip_password(voice_parent.with_suffix(".zip").name.lower())
-        cmd = ["zip", "-r", "-X", "-9", "-P", password_str, voice_parent.name, "."]
-        subprocess.run(cmd, cwd=voice_parent, check=True)
-        zip_filename = voice_parent.with_suffix('.zip')
-        created_zip = voice_parent / zip_filename.name
-        destination = voice_parent.parent / zip_filename.name
-        shutil.move(str(created_zip), str(destination))
-        if voice_parent.exists():
-            shutil.rmtree(str(voice_parent))
-        print(f"Built voice zip for {voice_parent.name}")
-    for file in gamedata_root.rglob("*.ogg"):
-        file.unlink()
+        files = sorted(voice_parent.glob("*.ogg"))
+        file_groups = []
+        current_group = []
+        current_size = 0
+
+        # Split files into 10MB chunks
+        for file in files:
+            file_size = file.stat().st_size
+            if current_size + file_size > MAX_ZIP_SIZE and current_group:
+                file_groups.append(current_group)
+                current_group = []
+                current_size = 0
+
+            current_group.append(file)
+            current_size += file_size
+
+        if current_group:
+            file_groups.append(current_group)
+
+        for i, chunk in enumerate(file_groups):
+            split_folder = voice_parent.parent / f"{voice_parent.name}_{i+1}"
+            split_folder.mkdir(exist_ok=True)
+
+            # Move files into the split subfolder
+            for file in chunk:
+                new_path = split_folder / file.name
+                shutil.move(str(file), str(new_path))
+                voice_file_names.append(new_path.relative_to(gamedata_root))
+
+            zip_name = f"{split_folder.name}.zip"
+            password_str = zip_password(zip_name)
+
+            # Create the zip file
+            cmd = ["zip", "-r", "-X", "-9", "-P", password_str, zip_name, "."]
+            subprocess.run(cmd, cwd=split_folder, check=True)
+
+            # Move zip to parent and clean up
+            shutil.move(str(split_folder / zip_name), str(voice_parent.parent / zip_name))
+            shutil.rmtree(split_folder)
+
+            print(f"Created {zip_name}")
+
+        # Remove original folder if empty
+        if not any(voice_parent.iterdir()):
+            shutil.rmtree(voice_parent)
+
     return sorted(voice_file_names)
 def main(voice_file_names_path: Path, scenario_script_path: Path, voice_excel_path: Path):
     with open(voice_file_names_path, "r", encoding = "utf8") as f:
