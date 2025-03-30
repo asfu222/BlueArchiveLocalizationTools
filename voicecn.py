@@ -106,7 +106,7 @@ def generate_voice_zip(gamedata_root: Path) -> list[Path]:
                 new_path.rename(new_name)
 
             zip_name = f"{split_folder.name}.zip"
-            password_str = zip_password(zip_name)
+            password_str = zip_password(zip_name.lower())
 
             # Create the zip file
             cmd = ["zip", "-r", "-X", "-9", "-P", password_str, zip_name, "."]
