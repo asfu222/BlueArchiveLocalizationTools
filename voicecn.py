@@ -70,14 +70,8 @@ def build_scenario_script(input_filepath, output_filepath):
     print(f"Deployment scenario script saved to {output_filepath}")
 def generate_voice_zip(gamedata_root: Path) -> list[Path]:
     MAX_ZIP_SIZE = 10 * 1024 * 1024  # 10MB
-    voice_parents = set()
+    voice_parents = voice_parents = {file.parent for file in gamedata_root.rglob("*.ogg")}
     voice_file_names = []
-
-    # Collect .ogg files, rename to lowercase, and group by parent folder
-    for file in gamedata_root.rglob("*.ogg"):
-        new_name = file.with_name(file.name.lower())
-        file.rename(new_name)
-        voice_parents.add(new_name.parent)
 
     for voice_parent in voice_parents:
         files = sorted(voice_parent.glob("*.ogg"))
@@ -108,6 +102,8 @@ def generate_voice_zip(gamedata_root: Path) -> list[Path]:
                 new_path = split_folder / file.name
                 shutil.move(str(file), str(new_path))
                 voice_file_names.append(new_path.relative_to(gamedata_root))
+                new_name = new_path.with_name(new_path.name.lower())
+                new_path.rename(new_name)
 
             zip_name = f"{split_folder.name}.zip"
             password_str = zip_password(zip_name)
