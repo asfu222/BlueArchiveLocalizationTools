@@ -18,12 +18,19 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         fields = repl_obj["fields"]
         mapping_list = repl_obj["mappings"]
         
-        lookup = {tuple(mapping["old"]): mapping["new"] for mapping in mapping_list}
+        lookup = {tuple(mapping["old"]): (mapping["new"], mapping.get("target_index", 0), mapping.get("replacement_count", float("inf"))) for mapping in mapping_list}
         
         for struct in data:
             key = tuple(struct[field] for field in fields)
             if key in lookup:
-                new_values = lookup[key]
+                new_values, target_index, replacement_count = lookup[key]
+                if target_index != 0:
+                    lookup[key] = (new_values, target_index-1, replacement_count)
+                    continue
+                if replacement_count > 0:
+                    lookup[key] = (new_values, target_index, replacement_count-1)
+                else:
+                    continue
                 for idx, field in enumerate(fields):
                     struct[field] = new_values[idx]
     out_path = input_filepath.parent / "temp" / input_filepath.name
