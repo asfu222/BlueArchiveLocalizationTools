@@ -15,7 +15,9 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         data = json.loads(inp_f.read())
     with open(replacements_filepath, "r", encoding="utf8") as repl_f:
         replacements = json.loads(repl_f.read())
-    for repl_obj in replacements:
+    print(f"loading replacements from {replacements_filepath}")
+    unique_replacements = list({tuple(r["fields"]): r for r in replacements}.values())
+    for repl_obj in unique_replacements:
         fields = repl_obj["fields"]
         mapping_list = repl_obj["mappings"]
         
