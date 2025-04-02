@@ -8,6 +8,7 @@ from extractor import TablesExtractor
 from repacker import TableRepackerImpl
 from lib.encryption import zip_password
 import shutil
+from collections import defaultdict
 
 def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
     with open(input_filepath, "r", encoding="utf8") as inp_f:
@@ -18,21 +19,31 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         fields = repl_obj["fields"]
         mapping_list = repl_obj["mappings"]
         
-        lookup = {tuple(mapping["old"]): (mapping["new"], mapping.get("target_index", 0), float(mapping.get("replacement_count", "inf"))) for mapping in mapping_list}
+        lookup = defaultdict(list)
+        
+        for mapping in mapping_list:
+            key = tuple(mapping["old"])
+            value = (
+                mapping["new"], 
+                mapping.get("target_index", 0), 
+                float(mapping.get("replacement_count", "inf"))
+            )
+            lookup[key].append(value)
         
         for struct in data:
             key = tuple(struct[field] for field in fields)
             if key in lookup:
-                new_values, target_index, replacement_count = lookup[key]
-                if target_index != 0:
-                    lookup[key] = (new_values, target_index-1, replacement_count)
-                    continue
-                if replacement_count > 0:
-                    lookup[key] = (new_values, target_index, replacement_count-1)
-                else:
-                    continue
-                for idx, field in enumerate(fields):
-                    struct[field] = new_values[idx]
+                for i in range(len(lookup[key])):
+                    new_values, target_index, replacement_count = lookup[key][i]
+                    if target_index != 0:
+                        lookup[key][i] = (new_values, target_index-1, replacement_count)
+                        continue
+                    if replacement_count > 0:
+                        lookup[key][i] = (new_values, target_index, replacement_count-1)
+                    else:
+                        continue
+                    for idx, field in enumerate(fields):
+                        struct[field] = new_values[idx]
     out_path = input_filepath.parent / "temp" / input_filepath.name
     out_path.parent.mkdir(parents=True, exist_ok=True)
         
