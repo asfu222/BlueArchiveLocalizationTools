@@ -8,3 +8,7 @@ build/
 *.pyd
 *.db
 *Temp/
+venv-ubuntu/
+Extracted/
+Replacements/
+scenariovoice/
