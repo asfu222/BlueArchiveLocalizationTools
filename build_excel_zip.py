@@ -18,7 +18,7 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         fields = repl_obj["fields"]
         mapping_list = repl_obj["mappings"]
         
-        lookup = {tuple(mapping["old"]): (mapping["new"], mapping.get("target_index", 0), mapping.get("replacement_count", float("inf"))) for mapping in mapping_list}
+        lookup = {tuple(mapping["old"]): (mapping["new"], mapping.get("target_index", 0), float(mapping.get("replacement_count", "inf"))) for mapping in mapping_list}
         
         for struct in data:
             key = tuple(struct[field] for field in fields)
