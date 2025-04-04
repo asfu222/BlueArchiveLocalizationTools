@@ -85,7 +85,7 @@ class TableRepackerImpl:
                 builder.Finish(offset)
                 bytes_output = bytes(builder.Output())
                 flatbuffer_class = self.flat_data_lib.__dict__[table_type]
-                flatbuffer_obj = getattr(flatbuffer_class, "GetRootAs")(data)
+                flatbuffer_obj = getattr(flatbuffer_class, "GetRootAs")(bytes_output)
                 #bytes_output = xor_with_key(table_type, bytes_output)
 
                 # Build parameters in COLUMN ORDER
