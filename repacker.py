@@ -101,7 +101,7 @@ class TableRepackerImpl:
                         item_accessor = getattr(flatbuffer_obj, col, None)
 
                         if callable(item_accessor):
-                            value = [item_accessor(i) for i in range(length_accessor())] if callable(length_accessor) else item_accessor()
+                            row_values.append([item_accessor(i) for i in range(length_accessor())] if callable(length_accessor) else item_accessor())
                         else:
                             raise ValueError(f"No valid accessor found for field '{col}'")
 
