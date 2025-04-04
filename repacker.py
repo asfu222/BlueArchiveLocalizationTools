@@ -11,7 +11,7 @@ import sqlite3
 class TableRepackerImpl:
     def __init__(self, flat_data_module_name):
         try:
-            flat_data_lib = importlib.import_module(flat_data_module_name)
+            self.flat_data_lib = importlib.import_module(flat_data_module_name)
             self.repack_wrapper_lib = importlib.import_module(
                 f"{flat_data_module_name}.repack_wrapper"
             )
@@ -84,7 +84,8 @@ class TableRepackerImpl:
                 offset = pack_func(builder, entry, False)
                 builder.Finish(offset)
                 bytes_output = bytes(builder.Output())
-
+                flatbuffer_class = self.flat_data_lib.__dict__[table_type]
+                flatbuffer_obj = getattr(flatbuffer_class, "GetRootAs")(data)
                 #bytes_output = xor_with_key(table_type, bytes_output)
 
                 # Build parameters in COLUMN ORDER
@@ -96,7 +97,14 @@ class TableRepackerImpl:
                         # Match C# property binding
                         if col not in entry:
                             raise ValueError(f"Missing field {col} in JSON entry")
-                        row_values.append(entry[col])
+                        length_accessor = getattr(flatbuffer_obj, f"{col}Length", None)
+                        item_accessor = getattr(flatbuffer_obj, col, None)
+
+                        if callable(item_accessor):
+                            value = [item_accessor(i) for i in range(length_accessor())] if callable(length_accessor) else item_accessor()
+                        else:
+                            raise ValueError(f"No valid accessor found for field '{col}'")
+
 
                 # Execute insert
                 cursor.execute(insert_query, row_values)
