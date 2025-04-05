@@ -69,7 +69,7 @@ def build_scenario_script(input_filepath, output_filepath):
     
     print(f"Deployment scenario script saved to {output_filepath}")
 def generate_voice_zip(gamedata_root: Path) -> list[Path]:
-    MAX_ZIP_SIZE = 10 * 1024 * 1024  # 10MB
+    MAX_ZIP_SIZE = 5 * 1024 * 1024  # 5MB
     voice_parents = voice_parents = {file.parent for file in gamedata_root.rglob("*.ogg")}
     voice_file_names = []
 
