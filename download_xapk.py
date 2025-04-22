@@ -1,4 +1,4 @@
-apk_url = "https://d.apkpure.com/b/XAPK/com.YostarJP.BlueArchive?version=latest"
+apk_url = "https://d.apkpure.net/b/XAPK/com.YostarJP.BlueArchive?version=latest&nc=arm64-v8a&sv=24"
 def download_xapk() -> str:
     import glob
     import os
