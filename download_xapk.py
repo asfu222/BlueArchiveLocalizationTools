@@ -17,6 +17,7 @@ def download_xapk() -> str:
                 apk_url,
                 request_method="get",
                 use_cloud_scraper=True,
+                verbose=True,
             )
         )
         and (apk_data := apk_req.get_response(True))
