@@ -47,81 +47,81 @@ class FileDownloader:
         self.use_cloud_scraper = use_cloud_scraper
         self.verbose = verbose
 
-def __download(
-    self,
-    method: Literal["save", "instance"],
-    use_stream: bool = False,
-    path: str = "",
-) -> bool:
-    """Handles the actual downloading logic, managing retries and progress bar updates."""
-    counter = 0
-    is_save = method == "save" and path != ""
-
-    if self.__retried > self.__max_retries:
-        print(
-            f"[ERROR] Max retries exceeded ({self.__max_retries}) for {os.path.split(self.url)[-1]}."
-        )
-        return False
-
-    try:
-        if self.verbose:
-            print(f"[INFO] Attempt #{self.__retried + 1} → {self.url}")
-            print(f"[INFO] Using method: {self.request_method.upper()} | Stream: {is_save or use_stream}")
-            print(f"[INFO] Headers: {self.headers}")
-            print(f"[INFO] Proxy: {Config.proxy}")
-
-        response: requests.Response = getattr(
-            create_scraper() if self.use_cloud_scraper else requests,
-            self.request_method,
-        )(
-            self.url,
-            headers=self.headers,
-            stream=is_save or use_stream,
-            proxies=Config.proxy,
-            timeout=10,
-            **self.__kwargs,
-        )
-
-        if self.verbose:
-            print(f"[DEBUG] Status Code: {response.status_code}")
-            print(f"[DEBUG] Final URL: {response.url}")
-            print(f"[DEBUG] Response Headers: {dict(response.headers)}")
-
-        # If saving file
-        if is_save:
-            with open(path, "wb") as file:
-                start_time = time()
-                for chunk in response.iter_content(chunk_size=4096):
-                    if not chunk:
-                        continue
-                    file.write(chunk)
-                    counter += len(chunk)
-                    bar_increase(len(chunk) if self.enable_progress else 0)
-                    # Abort if download is too slow
-                    if counter < 4096 * (time() - start_time):
-                        raise ConnectionError("Download too slow. Triggered fail-safe.")
-            return True
-
-        # If returning response object
-        if method == "instance":
-            self.__result = response
-            if self.enable_progress:
-                bar_increase()
-            return True
-
-        return False
-
-    except KeyboardInterrupt as e:
-        raise KeyboardInterrupt("Download task has been interrupted.") from e
-
-    except Exception as ex:
-        import traceback
-
-        print(f"[ERROR] Exception during download: {ex}")
-        traceback.print_exc()
-        self.__retried += 1
-        bar_increase(-counter if self.enable_progress else 0)
-        return self.__download(method, use_stream, path)
+    def __download(
+        self,
+        method: Literal["save", "instance"],
+        use_stream: bool = False,
+        path: str = "",
+    ) -> bool:
+        """Handles the actual downloading logic, managing retries and progress bar updates."""
+        counter = 0
+        is_save = method == "save" and path != ""
+    
+        if self.__retried > self.__max_retries:
+            print(
+                f"[ERROR] Max retries exceeded ({self.__max_retries}) for {os.path.split(self.url)[-1]}."
+            )
+            return False
+    
+        try:
+            if self.verbose:
+                print(f"[INFO] Attempt #{self.__retried + 1} → {self.url}")
+                print(f"[INFO] Using method: {self.request_method.upper()} | Stream: {is_save or use_stream}")
+                print(f"[INFO] Headers: {self.headers}")
+                print(f"[INFO] Proxy: {Config.proxy}")
+    
+            response: requests.Response = getattr(
+                create_scraper() if self.use_cloud_scraper else requests,
+                self.request_method,
+            )(
+                self.url,
+                headers=self.headers,
+                stream=is_save or use_stream,
+                proxies=Config.proxy,
+                timeout=10,
+                **self.__kwargs,
+            )
+    
+            if self.verbose:
+                print(f"[DEBUG] Status Code: {response.status_code}")
+                print(f"[DEBUG] Final URL: {response.url}")
+                print(f"[DEBUG] Response Headers: {dict(response.headers)}")
+    
+            # If saving file
+            if is_save:
+                with open(path, "wb") as file:
+                    start_time = time()
+                    for chunk in response.iter_content(chunk_size=4096):
+                        if not chunk:
+                            continue
+                        file.write(chunk)
+                        counter += len(chunk)
+                        bar_increase(len(chunk) if self.enable_progress else 0)
+                        # Abort if download is too slow
+                        if counter < 4096 * (time() - start_time):
+                            raise ConnectionError("Download too slow. Triggered fail-safe.")
+                return True
+    
+            # If returning response object
+            if method == "instance":
+                self.__result = response
+                if self.enable_progress:
+                    bar_increase()
+                return True
+    
+            return False
+    
+        except KeyboardInterrupt as e:
+            raise KeyboardInterrupt("Download task has been interrupted.") from e
+    
+        except Exception as ex:
+            import traceback
+    
+            print(f"[ERROR] Exception during download: {ex}")
+            traceback.print_exc()
+            self.__retried += 1
+            bar_increase(-counter if self.enable_progress else 0)
+            return self.__download(method, use_stream, path)
 
 
     def save_file(self, path: str) -> bool:
