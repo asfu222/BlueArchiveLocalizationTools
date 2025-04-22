@@ -58,17 +58,17 @@ class FileDownloader:
         is_save = method == "save" and path != ""
     
         if self.__retried > self.__max_retries:
-            print(
+            notice(
                 f"[ERROR] Max retries exceeded ({self.__max_retries}) for {os.path.split(self.url)[-1]}."
             )
             return False
     
         try:
             if self.verbose:
-                print(f"[INFO] Attempt #{self.__retried + 1} → {self.url}")
-                print(f"[INFO] Using method: {self.request_method.upper()} | Stream: {is_save or use_stream}")
-                print(f"[INFO] Headers: {self.headers}")
-                print(f"[INFO] Proxy: {Config.proxy}")
+                notice(f"[INFO] Attempt #{self.__retried + 1} → {self.url}")
+                notice(f"[INFO] Using method: {self.request_method.upper()} | Stream: {is_save or use_stream}")
+                notice(f"[INFO] Headers: {self.headers}")
+                notice(f"[INFO] Proxy: {Config.proxy}")
     
             response: requests.Response = getattr(
                 create_scraper() if self.use_cloud_scraper else requests,
@@ -83,9 +83,9 @@ class FileDownloader:
             )
     
             if self.verbose:
-                print(f"[DEBUG] Status Code: {response.status_code}")
-                print(f"[DEBUG] Final URL: {response.url}")
-                print(f"[DEBUG] Response Headers: {dict(response.headers)}")
+                notice(f"[DEBUG] Status Code: {response.status_code}")
+                notice(f"[DEBUG] Final URL: {response.url}")
+                notice(f"[DEBUG] Response Headers: {dict(response.headers)}")
     
             # If saving file
             if is_save:
@@ -117,7 +117,7 @@ class FileDownloader:
         except Exception as ex:
             import traceback
     
-            print(f"[ERROR] Exception during download: {ex}")
+            notice(f"[ERROR] Exception during download: {ex}")
             traceback.print_exc()
             self.__retried += 1
             bar_increase(-counter if self.enable_progress else 0)
