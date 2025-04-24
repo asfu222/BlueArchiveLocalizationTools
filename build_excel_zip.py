@@ -45,6 +45,8 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
                     else:
                         continue
                     for idx, field in enumerate(fields):
+                        if new_values[idx] == "<?skip>":
+                            continue
                         struct[field] = new_values[idx]
     out_path = input_filepath.parent / "temp" / input_filepath.name
     out_path.parent.mkdir(parents=True, exist_ok=True)
