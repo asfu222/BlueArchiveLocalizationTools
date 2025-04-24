@@ -79,8 +79,7 @@ def generate_voice_zip(gamedata_root: Path) -> list[Path]:
         files = sorted(voice_parent.glob("*.ogg"))
         file_groups = defaultdict(list)
 
-        # {voice_parent.name}_{groupid}_{...}.ogg
-        pattern = re.compile(rf"^{re.escape(voice_parent.name)}_(\d+)_")
+        pattern = re.compile(r"^[^_]+_(\d+)_\d+")
 
         for file in files:
             match = pattern.match(file.stem)
