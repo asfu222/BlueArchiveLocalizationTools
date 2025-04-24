@@ -89,7 +89,7 @@ def generate_voice_zip(gamedata_root: Path) -> list[Path]:
             else:
                 print(f"Skipping file (doesn't match pattern): {file.name}")
 
-        for group_id, group_files in file_groups.items():
+        for group_id, chunk in file_groups.items():
             split_folder = voice_parent.parent / f"{voice_parent.name}_{group_id}"
             split_folder.mkdir(exist_ok=True)
 
