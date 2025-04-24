@@ -118,7 +118,7 @@ def generate_voice_zip(gamedata_root: Path) -> list[Path]:
         if not any(voice_parent.iterdir()):
             shutil.rmtree(voice_parent)
 
-    return sorted(voice_file_names)
+    return voice_file_names
 def main(voice_file_names_path: Path, scenario_script_path: Path, voice_excel_path: Path):
     with open(voice_file_names_path, "r", encoding = "utf8") as f:
         voice_file_names = json.loads(f.read())
