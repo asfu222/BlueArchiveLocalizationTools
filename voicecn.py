@@ -7,6 +7,9 @@ import sys
 import argparse
 import shutil
 from lib.encryption import zip_password
+import re
+from collections import defaultdict
+
 def patch_voice_excel(voice_excel_path: Path, voice_file_names):
     with open(voice_excel_path, "r", encoding = "utf8") as f:
         voice_data = json.loads(f.read())
