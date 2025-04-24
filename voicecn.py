@@ -70,31 +70,26 @@ def build_scenario_script(input_filepath, output_filepath):
     print(f"Deployment scenario script saved to {output_filepath}")
 def generate_voice_zip(gamedata_root: Path) -> list[Path]:
     MAX_ZIP_SIZE = 5 * 1024 * 1024  # 5MB
-    voice_parents = voice_parents = {file.parent for file in gamedata_root.rglob("*.ogg")}
+    voice_parents = {file.parent for file in gamedata_root.rglob("*.ogg")}
     voice_file_names = []
 
     for voice_parent in voice_parents:
         files = sorted(voice_parent.glob("*.ogg"))
-        file_groups = []
-        current_group = []
-        current_size = 0
+        file_groups = defaultdict(list)
 
-        # Split files into 10MB chunks
+        # {voice_parent.name}_{groupid}_{...}.ogg
+        pattern = re.compile(rf"^{re.escape(voice_parent.name)}_(\d+)_")
+
         for file in files:
-            file_size = file.stat().st_size
-            if current_size + file_size > MAX_ZIP_SIZE and current_group:
-                file_groups.append(current_group)
-                current_group = []
-                current_size = 0
+            match = pattern.match(file.stem)
+            if match:
+                group_id = match.group(1)
+                file_groups[group_id].append(file)
+            else:
+                print(f"Skipping file (doesn't match pattern): {file.name}")
 
-            current_group.append(file)
-            current_size += file_size
-
-        if current_group:
-            file_groups.append(current_group)
-
-        for i, chunk in enumerate(file_groups):
-            split_folder = voice_parent.parent / f"{voice_parent.name}_{i+1}"
+        for group_id, group_files in file_groups.items():
+            split_folder = voice_parent.parent / f"{voice_parent.name}_{group_id}"
             split_folder.mkdir(exist_ok=True)
 
             # Move files into the split subfolder
