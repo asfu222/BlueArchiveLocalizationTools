@@ -36,9 +36,9 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
             lookup_collection[used_fields][stripped_key].append(value)
         
         for struct in data:
-            struct_values = tuple(struct[field] for field in fields)
+            struct_values = [struct[field] for field in fields]
             for used_fields, lookup in lookup_collection.items():
-                key = [struct_values[i] for i in used_fields]
+                key = tuple(struct_values[i] for i in used_fields)
                 if key not in lookup:
                     continue
                 for i in range(len(lookup[key])):
