@@ -20,21 +20,27 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
     for repl_obj in unique_replacements:
         fields = repl_obj["fields"]
         mapping_list = repl_obj["mappings"]
-        
-        lookup = defaultdict(list)
+
+        lookup_collection = defaultdict(lambda: defaultdict(list))
         
         for mapping in mapping_list:
-            key = tuple(mapping["old"])
+            old_values = mapping["old"]
+            used_fields = tuple(i for i, v in enumerate(old_values) if "<?qi>" not in old_values else tuple(i for i, v in enumerate(old_values) if v != "<?qi>")
+            stripped_key = tuple(old_values[i] for i in used_fields)
+            
             value = (
-                mapping["new"], 
-                mapping.get("target_index", 0), 
+                mapping["new"],
+                mapping.get("target_index", 0),
                 float(mapping.get("replacement_count", "inf"))
             )
-            lookup[key].append(value)
+            lookup_collection[used_fields][stripped_key].append(value)
         
         for struct in data:
-            key = tuple(struct[field] for field in fields)
-            if key in lookup:
+            struct_values = tuple(struct[field] for field in fields)
+            for used_fields, lookup in lookup_collection.items():
+                key = [struct_values[i] for i in used_fields]
+                if key not in lookup:
+                    continue
                 for i in range(len(lookup[key])):
                     new_values, target_index, replacement_count = lookup[key][i]
                     if target_index != 0:
