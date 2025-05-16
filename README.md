@@ -13,3 +13,15 @@ This project is intended solely for educational and demonstrative purposes and d
 “蔚蓝档案”是上海星啸网络科技有限公司的注册商标，版权所有。 
 
 「ブルーアーカイブ」は株式会社Yostarの登録商標です。著作権はすべて保有されています。 
+
+## Usage
+This repository can be used for unpacking and repacking most excels for all three servers (jp, gl, cn) if provided with dumpable game executables OR static C# dumps in which types are parsed correctly, to be used to generate FlatData.
+
+This repository does not provide direct FlatData nor any of the aforementioned items, but you can see setup_flatdata for reference in acquiring dumps (intended to be used for jp only).
+
+Additionally, this repository also provides code necessary for packing and unpacking voice zips. This does not go into the nuance of Criware formats, and does not provide methods to unpack those (which means this does not apply to some cn voice lines).
+
+This repository does not go into the nuance of crc manipulation, catalog manipulation, and other changes necessary fir production.
+For usage in production, see [asfu222/BACNLocalizationResources](https://github.com/asfu222/BACNLocalizationResources)
+
+For asset bundles, see [asfu222/commonpngsrc](https://github.com/asfu222/commonpngsrc)
