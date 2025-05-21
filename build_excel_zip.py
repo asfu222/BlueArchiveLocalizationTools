@@ -25,7 +25,11 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         
         for mapping in mapping_list:
             old_values = mapping["old"]
-            used_fields = tuple(i for i, v in enumerate(old_values) if "<?qi>" not in old_values else tuple(i for i, v in enumerate(old_values) if v != "<?qi>")
+            if "<?qi>" not in old_values:
+                used_fields = tuple(i for i, v in enumerate(old_values))
+            else:
+                used_fields = tuple(i for i, v in enumerate(old_values) if v != "<?qi>")
+
             stripped_key = tuple(old_values[i] for i in used_fields)
             
             value = (
