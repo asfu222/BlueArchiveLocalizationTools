@@ -10,6 +10,11 @@ from lib.encryption import zip_password
 import shutil
 from collections import defaultdict
 
+def normalize(s):
+    if isinstance(s, str):
+        return s.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
+    return s
+
 def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
     with open(input_filepath, "r", encoding="utf8") as inp_f:
         data = json.loads(inp_f.read())
@@ -24,7 +29,7 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         lookup_collection = defaultdict(lambda: defaultdict(list))
         
         for mapping in mapping_list:
-            old_values = mapping["old"]
+            old_values = [normalize(item) for item in mapping["old"]]
             if "<?qi>" not in old_values:
                 used_fields = tuple(i for i, v in enumerate(old_values))
             else:
@@ -42,7 +47,7 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
         for struct in data:
             struct_values = [struct[field] for field in fields]
             for used_fields, lookup in lookup_collection.items():
-                key = tuple(struct_values[i] for i in used_fields)
+                key = tuple(normalize(struct_values[i]) for i in used_fields)
                 if key not in lookup:
                     continue
                 for i in range(len(lookup[key])):
