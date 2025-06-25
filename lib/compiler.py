@@ -316,14 +316,14 @@ class Re:
         r"""
 public\s+enum\s+(.{1,128}?)\s*//\s*TypeDefIndex:\s*\d+\s*
 \{\s*
-        (.*?)
+(.*?)
 \s*\}
         """,
         re.M | re.S | re.X,
     )
 
     """Get value, type of enum and enum field."""
-    enum_member = re.compile(r"(.+?) = (-?\d+?)")
+    enum_member = re.compile(r"(.+?) = (-?\d+)")
     """Get member name, value in enum."""
 
     table_data_type = re.compile(r"public Nullable<(.+?)> DataList\(int j\) { }")
