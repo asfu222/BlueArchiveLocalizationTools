@@ -300,30 +300,30 @@ class %s:
 
 class Re:
     struct = re.compile(
-        r"""struct (.{0,128}?) :.{0,128}?IFlatbufferObject.{0,128}?
-\{
+        r"""\s*struct (.{0,128}?) :.{0,128}?IFlatbufferObject.{0,128}?
+\s*\{
 (.+?)
-\}
+\s*\}
 """,
         re.M | re.S,
     )
     """Get structure name and its field."""
 
-    struct_property = re.compile(r"""public (.+) (.+?) { get; }""")
+    struct_property = re.compile(r"""public (?:FlatData\.)?(.+?)\?? (.+?) { get(?: => default)?; }""")
     """Get property type and name in field."""
 
     enum = re.compile(
-        r"""// Namespace: FlatData
-public enum (.{1,128}?) // TypeDefIndex: \d+?
-{
-	// Fields
-	public (.+?) value__; // 0x0
-(.+?)
-}""",
-        re.M | re.S,
+        r"""
+public\s+enum\s+(.{1,128}?)\s*//\s*TypeDefIndex:\s*\d+\s*
+\{\s*
+        (.*?)
+\s*\}
+        """,
+        re.M | re.S | re.X,
     )
+
     """Get value, type of enum and enum field."""
-    enum_member = re.compile(r"public const .+? (.+?) = (-?\d+?);")
+    enum_member = re.compile(r"(.+?) = (-?\d+?)")
     """Get member name, value in enum."""
 
     table_data_type = re.compile(r"public Nullable<(.+?)> DataList\(int j\) { }")
@@ -333,19 +333,42 @@ class CSParser:
     def __init__(self, file_path: str) -> None:
         with open(file_path, "rt", encoding="utf8") as file:
             self.data = file.read()
+            start_token = "namespace FlatData"
+            start_idx = self.data.find(start_token)
+
+            if start_idx == -1:
+                self.flatdata_part = ""
+                return
+
+            brace_idx = self.data.find("{", start_idx)
+            if brace_idx == -1:
+                self.flatdata_part = ""
+                return
+
+            index = brace_idx
+            open_braces = 1
+
+            while index < len(self.data) - 1 and open_braces > 0:
+                index += 1
+                if self.data[index] == "{":
+                    open_braces += 1
+                elif self.data[index] == "}":
+                    open_braces -= 1
+
+            self.flatdata_part = self.data[start_idx:index + 1]
 
     def parse_enum(self) -> list[EnumType]:
         """Extract enum from cs."""
         enums = []
-        for enum_name, enum_type, content in Re.enum.findall(self.data):
+        for enum_name, content in Re.enum.findall(self.flatdata_part):
             if "." in enum_name:
                 continue
 
             enum_members = []
             for name, value in Re.enum_member.findall(content):
-                enum_members.append(EnumMember(name, value))
+                enum_members.append(EnumMember(name.strip(), value))
 
-            enums.append(EnumType(enum_name, enum_type, enum_members))
+            enums.append(EnumType(enum_name, "int", enum_members))
 
         return enums
 
@@ -515,7 +538,7 @@ class CompileToPython:
             ), String.FB_LIST_AND_NON_SCALAR_PROPERTY_FUNCTION(
                 p_name, p_name, index, p_name, p_name, t_size, t_size
             )
-
+        
         return String.FB_STRUCT_PROPERTY_CLASS_METHODS(
             p_name,
             f_offset,
@@ -547,7 +570,6 @@ class CompileToPython:
                 ),
                 func,
             )
-
         return (
             String.FB_ISOLATED_PROPERTY_CLASS_METHODS(
                 p_name, f_offset, p_type, p_type, p_type
