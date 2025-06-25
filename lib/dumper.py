@@ -7,6 +7,10 @@ from os import path
 from lib.downloader import FileDownloader
 from utils.util import CommandUtils, FileUtils, ZipUtils
 
+import platform
+
+os_name = platform.system().lower()
+
 IL2CPP_ZIP = "https://github.com/asfu222/Il2CppInspectorRedux/releases/latest/download/Il2CppInspectorRedux.CLI-linux-x64.zip"
 ZIP_NAME = "Il2CppInspectorRedux.CLI.zip"
 
@@ -19,6 +23,13 @@ class IL2CppDumper:
         FileDownloader(IL2CPP_ZIP).save_file(path.join(save_path, ZIP_NAME))
         ZipUtils.extract_zip(path.join(save_path, ZIP_NAME), path.join(save_path, "Il2CppInspector"))
         self.project_dir = path.join(save_path, "Il2CppInspector")
+        if os_name == "linux":
+            CommandUtils.run_command(
+               "chmod",
+               "+x",
+               "./Il2CppInspector",
+               cwd=self.project_dir
+            )
 
     def dump_il2cpp(
         self,
