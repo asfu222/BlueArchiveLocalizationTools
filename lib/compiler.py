@@ -326,7 +326,7 @@ public\s+enum\s+(.{1,128}?)\s*//\s*TypeDefIndex:\s*\d+\s*
     enum_member = re.compile(r"(.+?) = (-?\d+)")
     """Get member name, value in enum."""
 
-    table_data_type = re.compile(r"public Nullable<(.+?)> DataList\(int j\) { }")
+    table_data_type = re.compile(r"public (.+?)\? DataList\(int j\) => default;")
 
 
 class CSParser:
@@ -384,7 +384,7 @@ class CSParser:
         if len(prop_name) > 6 and prop_name.endswith("Length"):
             list_name = prop_name.removesuffix("Length")
             re_type_of_list = re.search(
-                f"public (.+?) {list_name}\\(int j\\) {{ }}", prop_data
+                rf"public (?:FlatData\.)?(.+?)\?? {list_name}\(int j\) => default;", prop_data
             )  # Get object type in list.
 
             if re_type_of_list:
