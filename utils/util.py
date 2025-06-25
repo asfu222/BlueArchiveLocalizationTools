@@ -410,5 +410,4 @@ class CommandUtils:
             )
             return True, ""
         except Exception as e:
-            err = f"Command failed while excute command '{' '.join(list(commands))}' with error: {e}."
-            return False, err
+            return False, e
