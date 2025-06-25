@@ -64,7 +64,8 @@ class IL2CppDumper:
             "--must-compile",
             cwd=self.project_dir
         )
-        print(success, err)
+        if not success:
+            print(err)
         '''
         success, err = CommandUtils.run_command(
             "dotnet",
