@@ -66,6 +66,7 @@ class IL2CppDumper:
         )
         if not success:
             print(err)
+            raise RuntimeError(err)
         '''
         success, err = CommandUtils.run_command(
             "dotnet",

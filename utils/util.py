@@ -401,8 +401,6 @@ class CommandUtils:
         try:
             subprocess.run(
                 list(commands),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
                 check=True,
                 text=True,
                 cwd=cwd,
