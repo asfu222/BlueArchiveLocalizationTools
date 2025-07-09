@@ -18,7 +18,7 @@ def get_platform_identifier():
 
     arch_map = {
         "x86_64": "x64",
-        "AMD64": "x64",
+        "amd64": "x64",
         "arm64": "arm64",
         "aarch64": "arm64"
     }
