@@ -73,7 +73,7 @@ class IL2CppDumper:
         cs_out = path.join(extract_path, "dump.cs")
 
         success, err = CommandUtils.run_command(
-            binary_path,
+            os.path.abspath(os.path.join(self.project_dir, binary_path)),
             "--bin", il2cpp_path,
             "--metadata", global_metadata_path,
             "--select-outputs",
