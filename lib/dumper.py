@@ -35,7 +35,7 @@ def get_platform_identifier():
 class IL2CppDumper:
     def __init__(self) -> None:
         self.project_dir = ""
-        self.binary_name = "Il2CppInspector"
+        self.binary_name = "Il2CppInspector.Redux.CLI"
 
     def get_il2cpp_dumper(self, save_path: str) -> None:
         platform_id, os_name = get_platform_identifier()
@@ -44,7 +44,7 @@ class IL2CppDumper:
         zip_path = path.join(save_path, "Il2CppInspectorRedux.CLI.zip")
         FileDownloader(il2cpp_zip_url).save_file(zip_path)
 
-        extract_path = path.join(save_path, "Il2CppInspector")
+        extract_path = path.join(save_path, "Il2CppInspectorRedux")
         ZipUtils.extract_zip(zip_path, extract_path)
         self.project_dir = extract_path
 
