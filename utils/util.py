@@ -7,7 +7,7 @@ from keyword import kwlist
 import UnityPy
 from zipfile import ZipFile
 from UnityPy.files.File import ObjectReader
-from lib.console import ProgressBar
+from lib.console import ProgressBar, notice
 import os
 import subprocess
 
