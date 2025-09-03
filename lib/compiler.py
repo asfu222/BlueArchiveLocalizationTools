@@ -882,7 +882,7 @@ from . import *
         """Helper to generate type-specific conversion code"""
         data_type = prop.data_type
         if data_type == "bool":
-            return f"bool(value_var)", data_type
+            return value_var, data_type
         if data_type in self.enums_by_name:
             return f"convert_int(getattr({data_type}, {value_var}), password)", "int"
         elif data_type == "float":
