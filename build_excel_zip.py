@@ -15,7 +15,7 @@ def normalize(s):
         return s.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
     return s
 
-def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Path:
+def apply_replacements(input_filepath: Path, replacements_filepath: Path, skip_fields=[]) -> Path:
     with open(input_filepath, "r", encoding="utf8") as inp_f:
         data = json.loads(inp_f.read())
     with open(replacements_filepath, "r", encoding="utf8") as repl_f:
@@ -60,6 +60,8 @@ def apply_replacements(input_filepath: Path, replacements_filepath: Path) -> Pat
                     else:
                         continue
                     for idx, field in enumerate(fields):
+                        if field in skip_fields:
+                            continue
                         if new_values[idx] == "<?skip>":
                             continue
                         struct[field] = new_values[idx]
