@@ -24,9 +24,11 @@ def main(voice_file_names_path: Path, excel_input_path: Path, repl_input_dir: Pa
         if repl_file.exists():
             if cfg.get("applyvoicecn", False):
                 out_file = apply_replacements(jsonfile, repl_file)
+                if jsonfile.stem not in ["ScenarioScriptExcel", "VoiceExcel"]:
+                    packer.repackjson2db(out_file, output_filepath)
             else:
                 out_file = apply_replacements(jsonfile, repl_file, skip_fields=["VoiceId"])
-            packer.repackjson2db(out_file, output_filepath)
+                packer.repackjson2db(out_file, output_filepath)
     if cfg.get("applyvoicecn", False):
         temp_dir = source_dir / "temp"
         scenario_script_path = temp_dir / "ScenarioScriptExcel.json"
