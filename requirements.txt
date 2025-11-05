@@ -1,5 +1,5 @@
 requests
-git+https://github.com/asfu222/UnityPy.git@master
+git+https://github.com/asfu222/UnityPy.git@master#egg=UnityPy
 cloudscraper
 xxhash
 pycryptodome
