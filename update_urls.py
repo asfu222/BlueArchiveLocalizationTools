@@ -89,7 +89,7 @@ def get_addressable_catalog_url(server_url: str, json_output_path: Path) -> str:
         raise LookupError("Cannot find AddressablesCatalogUrlRoot in the last entry of OverrideConnectionGroups.")
     with open(json_output_path, "wb") as f:
         f.write(json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode())
-    return latest_catalog_url
+    return latest_catalog_url, connection_groups[0].get("BundleVersion")
 
 import zipfile
 import xml.etree.ElementTree as ET
@@ -135,6 +135,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.output_path, "wb") as fs:
         server_url = get_server_url()
-        addressable_catalog_url = get_addressable_catalog_url(server_url, args.json_output_path)
+        addressable_catalog_url, bundle_version = get_addressable_catalog_url(server_url, args.json_output_path)
         versionCode, versionName = get_apk_version_info(path.join(TEMP_DIR, "com.YostarJP.BlueArchive.apk"))
-        fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}\nBA_VERSION_CODE={versionCode}\nBA_VERSION_NAME={versionName}".encode())
+        fs.write(f"BA_SERVER_URL={server_url}\nADDRESSABLE_CATALOG_URL={addressable_catalog_url}\nBA_VERSION_CODE={versionCode}\nBA_VERSION_NAME={versionName}\nBUNDLE_VERSION={bundle_version}".encode())
